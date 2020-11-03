@@ -1,0 +1,9 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:st="jelly:stapler" xmlns:i="/shared">
+
+  <st:documentation>
+    Include common CSS files
+  </st:documentation>
+
+  <link rel="stylesheet" href="${resURL}/plugin/prisma-cloud-iac-scan/css/component.dashboard-template.css"/>
+</j:jelly>

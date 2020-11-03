@@ -1,0 +1,8 @@
+<?jelly escape-by-default='true'?>
+
+<!--
+  This view is used to render the installed plugins page.
+-->
+<div>
+  This plugin is a scan which illustrates the vulneribilities and remedies of the Image.
+</div>

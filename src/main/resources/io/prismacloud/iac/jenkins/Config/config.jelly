@@ -1,0 +1,31 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+  <!--
+    This Jelly script is used to produce the global configuration option.
+
+    Jenkins uses a set of tag libraries to provide uniformity in forms.
+    To determine where this tag is defined, first check the namespace URI,
+    and then look under $JENKINS/views/. For example, <f:section> is defined
+    in $JENKINS/views/lib/form/section.jelly.
+
+    It's also often useful to just check other similar scripts to see what
+    tags they use. Views are always organized according to its owner class,
+    so it should be straightforward to find them.
+  -->
+  <f:section title="Prisma Cloud">
+    <f:entry field="address" title="Auth URL" description="Prisma Cloud Auth URL, formatted as https://authURL">
+        <f:textbox />
+    </f:entry>
+
+    <f:entry field="username" title="Access Key" description="Prisma Cloud access key used to authenticate to the Prisma Cloud API">
+        <f:textbox />
+    </f:entry>
+
+    <f:entry field="password" title="Secret Key" description="Prisma Cloud secret key">
+        <f:password />
+    </f:entry>
+    <f:validateButton
+          title="Test Connection" progress="Testing..."
+          method="testConnection" with="address,username,password" />
+  </f:section>
+</j:jelly>
