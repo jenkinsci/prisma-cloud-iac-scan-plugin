@@ -22,8 +22,10 @@ import hudson.util.FormValidation;
 import hudson.util.Secret;
 import javax.annotation.CheckForNull;
 import jenkins.model.GlobalConfiguration;
+import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.verb.POST;
 
 @Extension
 public final class Config
@@ -70,6 +72,7 @@ extends GlobalConfiguration {
         this.save();
     }
 
+    @POST
     public FormValidation doCheckUsername(@QueryParameter String value) {
         if (value.length() == 0) {
             return FormValidation.error((String)"Please set access key");
@@ -77,6 +80,7 @@ extends GlobalConfiguration {
         return FormValidation.ok();
     }
 
+    @POST
     public FormValidation doCheckPassword(@QueryParameter String value) {
         if (value.length() == 0) {
             return FormValidation.error((String)"Please set secret key");
@@ -84,6 +88,7 @@ extends GlobalConfiguration {
         return FormValidation.ok();
     }
 
+    @POST
     public FormValidation doCheckAddress(@QueryParameter String value) {
         if (value.length() == 0) {
             return FormValidation.error((String)"Please set auth URL");
@@ -95,6 +100,7 @@ extends GlobalConfiguration {
     }
 
     public FormValidation doTestConnection(@QueryParameter(value="address") String address, @QueryParameter(value="username") String username, @QueryParameter(value="password") String password) {
+        Jenkins.get().checkPermission(Jenkins.ADMINISTER);
         try {
             PrismaCloudServiceImpl prismaCloudService = new PrismaCloudServiceImpl();
             PrismaCloudConfiguration prismaCloudConfiguration = new PrismaCloudConfiguration();

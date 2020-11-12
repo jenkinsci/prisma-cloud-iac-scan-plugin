@@ -28,6 +28,7 @@ import javax.annotation.Nonnull;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import lombok.SneakyThrows;
+import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
@@ -43,6 +44,7 @@ public class TemplateScanBuilder  extends Builder implements SimpleBuildStep {
 	private String templateversion;
 	private String tags;
     private boolean apiResponseError;
+    private String jobName;
 
 	public String getHostname() {
 		return hostname;
@@ -130,6 +132,7 @@ public class TemplateScanBuilder  extends Builder implements SimpleBuildStep {
 		File destinationFile = new File(sourceFolder+"/iacscan.zip");
 		destinationFile.setWritable(true);
 
+		this.jobName = build.getDisplayName();
  		//Create zip file
 		boolean isZipFileCreated = createZipFile(sourceFolder, destinationFile);
 
@@ -163,6 +166,7 @@ public class TemplateScanBuilder  extends Builder implements SimpleBuildStep {
 	 * on the Jenkins User interface
 	 */
 	@Extension
+	@Symbol("prismaIaC")
     public static class Descriptor extends BuildStepDescriptor<Builder> {
         @Override
 		public boolean isApplicable(Class<? extends AbstractProject> aClass) {
@@ -253,8 +257,6 @@ public class TemplateScanBuilder  extends Builder implements SimpleBuildStep {
 	public String callPrismaCloudAsyncEndPoint(String filePath, TaskListener listener, String workspace) throws IOException, InterruptedException {
 		listener.getLogger().println("callPrismaCloudAsyncEndPoint =====Workspace======"+workspace);
 		Config descriptor = (Config)Jenkins.get().getDescriptor(Config.class);
-		listener.getLogger().println("Descriptor=====auth url======"+descriptor.getAddress());
-		listener.getLogger().println("Descriptor=====access key======"+descriptor.getUsername());
 		PrismaCloudServiceImpl prismaCloudService = new PrismaCloudServiceImpl();
 		PrismaCloudConfiguration prismaCloudConfiguration = new PrismaCloudConfiguration();
 		prismaCloudConfiguration.setAuthUrl(descriptor.getAddress()+"/login");
@@ -272,17 +274,8 @@ public class TemplateScanBuilder  extends Builder implements SimpleBuildStep {
 		prismaCloudConfiguration.setOperator(operator);
 		prismaCloudConfiguration.setBuildNumber(String.valueOf(getJenkinsBuildNumber()));
 		prismaCloudConfiguration.setCurrentUserName(User.current().getFullName());
-		prismaCloudConfiguration.setJobName(getJobName(workspace, listener));
+		prismaCloudConfiguration.setJobName(this.jobName);
 		return prismaCloudService.getScanDetails(prismaCloudConfiguration, filePath);
-	}
-
-	protected String getJobName(String workspace, TaskListener listener) {
-		try {
-			return workspace.substring(workspace.lastIndexOf('/') + 1);
-		} catch (Exception e) {
-			listener.getLogger().println("Error in getJobName" + e.getMessage());
-			return "";
-		}
 	}
 
 	@SneakyThrows
