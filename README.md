@@ -16,4 +16,6 @@ It enables you to:
 
 ## Prerequisite
 
- Authentication credentials from Prisma Cloud. Get Prisma Cloud here - https://marketplace.paloaltonetworks.com/s/product-rdl
+Authentication credentials from Prisma Cloud. Get Prisma Cloud here - https://marketplace.paloaltonetworks.com/s/product-rdl
+
+[Configuration Documentation](https://docs.paloaltonetworks.com/prisma/prisma-cloud/prisma-cloud-admin/prisma-cloud-devops-security/use-the-prisma-cloud-plugin-for-jenkins.html#id443f2a86-174c-4b12-8d77-15dd990e7908)
