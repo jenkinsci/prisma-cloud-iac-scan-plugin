@@ -37,12 +37,6 @@ public class ScanResultAction implements RunAction2 {
 
   private Map<String, String> severityMap;
 
-  /**
-   *
-   * @param scanResultJsonFile
-   * @param buildStatus
-   * @param map
-   */
   @SuppressFBWarnings({"UC_USELESS_OBJECT"})
   public ScanResultAction(String scanResultJsonFile, boolean buildStatus,
                           Map<String, String> map, boolean apiResponseError) {

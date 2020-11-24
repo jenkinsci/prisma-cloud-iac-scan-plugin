@@ -51,9 +51,6 @@ public class PrismaCloudServiceImpl implements PrismaCloudService {
 
   /**
    * This method returns the valid token using access_key and secret key.
-   * @param prismaCloudConfiguration
-   * @return
-   * @throws IOException
    */
     @Override
     public String getAccessToken(PrismaCloudConfiguration prismaCloudConfiguration)
@@ -64,11 +61,6 @@ public class PrismaCloudServiceImpl implements PrismaCloudService {
 
   /**
    * This method scan the zip file and returns JSON as string.
-   * @param prismaCloudConfiguration
-   * @param filePath
-   * @return
-   * @throws IOException
-   * @throws InterruptedException
    */
     @Override
     public String getScanDetails(PrismaCloudConfiguration prismaCloudConfiguration, String filePath)
@@ -79,10 +71,6 @@ public class PrismaCloudServiceImpl implements PrismaCloudService {
 
     /**
      * This method is used for API token generation.
-     * @param prismaCloudConfiguration
-     * @return
-     * @throws ParseException
-     * @throws IOException
      */
     @SuppressFBWarnings({"RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"})
     private String generateToken(PrismaCloudConfiguration prismaCloudConfiguration)
@@ -105,10 +93,6 @@ public class PrismaCloudServiceImpl implements PrismaCloudService {
 
     /**
      * Below method is used for API token generation
-     * @param client
-     * @param prismaCloudConfiguration
-     * @return
-     * @throws IOException
      */
     private CloseableHttpResponse getJwtToken(CloseableHttpClient client, PrismaCloudConfiguration prismaCloudConfiguration) throws IOException {
         logger.debug("Entered into PrismaCloudServiceImpl.getJwtToken");
@@ -126,10 +110,6 @@ public class PrismaCloudServiceImpl implements PrismaCloudService {
 
     /**
      *Below method is used to get scan details from prisma clod API
-     * @param prismaCloudConfiguration
-     * @param filePath
-     * @return
-     * @throws IOException
      */
     @SuppressFBWarnings({"RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"})
   public String getScanResult(PrismaCloudConfiguration prismaCloudConfiguration, String filePath)
@@ -206,11 +186,6 @@ public class PrismaCloudServiceImpl implements PrismaCloudService {
 
     /**
      * Below methos is used to get scan details from prisma cloud API
-     * @param client
-     * @param prismaCloudConfiguration
-     * @param authToken
-     * @return
-     * @throws IOException
      */
   private CloseableHttpResponse getPrismaCloudScanDetails(CloseableHttpClient client, PrismaCloudConfiguration prismaCloudConfiguration, String authToken) throws IOException {
     logger.info("Entered into PrismaCloudServiceImpl.getScanResult");
@@ -225,11 +200,6 @@ public class PrismaCloudServiceImpl implements PrismaCloudService {
 
     /**
      * Below methos is used to upload the file to given S3 Bucket
-     * @param client
-     * @param s3LocationURL
-     * @param filePath
-     * @return
-     * @throws IOException
      */
   private CloseableHttpResponse uploadFileToS3(CloseableHttpClient client, String s3LocationURL, String filePath) throws IOException {
     logger.info("Entered into PrismaCloudServiceImpl.uploadFileToS3");
@@ -242,12 +212,6 @@ public class PrismaCloudServiceImpl implements PrismaCloudService {
 
     /**
      * Below method is used to start scan process for uploaded file.
-     * @param client
-     * @param scanId
-     * @param authToken
-     * @param prismaCloudConfiguration
-     * @return
-     * @throws IOException
      */
   private CloseableHttpResponse triggerScan(CloseableHttpClient client, String scanId, String authToken, PrismaCloudConfiguration prismaCloudConfiguration) throws IOException {
     logger.info("Entered into PrismaCloudServiceImpl.triggerScan");
@@ -290,12 +254,6 @@ public class PrismaCloudServiceImpl implements PrismaCloudService {
 
     /**
      * Below method is used to get scan status for uploaded file.
-     * @param client
-     * @param scanId
-     * @param authToken
-     * @param prismaCloudConfiguration
-     * @return
-     * @throws IOException
      */
   private CloseableHttpResponse getScanJobStatus(CloseableHttpClient client, String scanId, String authToken, PrismaCloudConfiguration prismaCloudConfiguration) throws IOException {
     logger.info("Entered into PrismaCloudServiceImpl.getScanJobStatus");
@@ -311,12 +269,6 @@ public class PrismaCloudServiceImpl implements PrismaCloudService {
 
     /**
      * Below method is used to get scan result of uploaded file.
-     * @param client
-     * @param scanId
-     * @param authToken
-     * @param prismaCloudConfiguration
-     * @return
-     * @throws IOException
      */
   private CloseableHttpResponse getScanResult(CloseableHttpClient client, String scanId, String authToken, PrismaCloudConfiguration prismaCloudConfiguration) throws IOException {
     logger.info("Entered into PrismaCloudServiceImpl.getScanResult");
@@ -332,9 +284,6 @@ public class PrismaCloudServiceImpl implements PrismaCloudService {
 
     /**
      * Below method is used to format/create request for API call
-     * @return
-     * @throws UnsupportedEncodingException
-     * @throws JsonProcessingException
      */
   private StringEntity getRequest(PrismaCloudConfiguration prismaCloudConfiguration) throws UnsupportedEncodingException, JsonProcessingException {
     // Form json request

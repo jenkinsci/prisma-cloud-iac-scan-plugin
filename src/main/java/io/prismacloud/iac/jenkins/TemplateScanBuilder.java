@@ -116,11 +116,6 @@ public class TemplateScanBuilder  extends Builder implements SimpleBuildStep {
 
 	/**
 	 * Below method is triggered when jenkins build is triggered.
-	 * @param build
-	 * @param workspace
-	 * @param launcher
-	 * @param listener
-	 * @throws IOException
 	 */
 	@SneakyThrows
 	@SuppressFBWarnings({"DM_EXIT", "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE", "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE","DLS_DEAD_LOCAL_STORE", "DM_STRING_VOID_CTOR"})
@@ -248,10 +243,6 @@ public class TemplateScanBuilder  extends Builder implements SimpleBuildStep {
 
 	/**
 	 * Below method calls the prisma cloud API and get result through common module
-	 * @param filePath
-	 * @return
-	 * @throws IOException
-	 * @throws InterruptedException
 	 */
 	@SuppressFBWarnings({"UC_USELESS_OBJECT", "DLS_DEAD_LOCAL_STORE", "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"})
 	public String callPrismaCloudAsyncEndPoint(String filePath, TaskListener listener, String workspace) throws IOException, InterruptedException {
