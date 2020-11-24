@@ -116,12 +116,6 @@
             <scope>compile</scope>
         </dependency>
         <dependency>
-            <groupId>com.prismacloud</groupId>
-            <artifactId>prisma-cloud-commons</artifactId>
-            <version>1.0-SNAPSHOT</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-all</artifactId>
             <version>1.8.5</version>
