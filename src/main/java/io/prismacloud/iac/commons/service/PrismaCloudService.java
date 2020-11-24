@@ -1,7 +1,7 @@
 package io.prismacloud.iac.commons.service;
 
 
-import com.prismacloud.config.PrismaCloudConfiguration;
+import io.prismacloud.iac.commons.config.PrismaCloudConfiguration;
 import java.io.IOException;
 
 /**

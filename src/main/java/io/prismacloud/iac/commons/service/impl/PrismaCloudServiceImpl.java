@@ -6,17 +6,18 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
-import com.prismacloud.config.PrismaCloudConfiguration;
-import com.prismacloud.model.JsonApiModelFailureCriteria;
-import com.prismacloud.util.JSONUtils;
-import com.prismacloud.service.PrismaCloudService;
-import com.prismacloud.model.IacTemplateParameters;
-import com.prismacloud.model.JsonApiModelAsyncScanRequest;
-import com.prismacloud.model.JsonApiModelAsyncScanRequestData;
-import com.prismacloud.model.JsonApiModelAsyncScanRequestDataAttributes;
-import com.prismacloud.model.JsonApiModelScanTrigger;
-import com.prismacloud.model.JsonApiModelScanTriggerData;
-import com.prismacloud.model.JsonApiModelScanTriggerDataAttributes;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import io.prismacloud.iac.commons.config.PrismaCloudConfiguration;
+import io.prismacloud.iac.commons.model.JsonApiModelFailureCriteria;
+import io.prismacloud.iac.commons.util.JSONUtils;
+import io.prismacloud.iac.commons.service.PrismaCloudService;
+import io.prismacloud.iac.commons.model.IacTemplateParameters;
+import io.prismacloud.iac.commons.model.JsonApiModelAsyncScanRequest;
+import io.prismacloud.iac.commons.model.JsonApiModelAsyncScanRequestData;
+import io.prismacloud.iac.commons.model.JsonApiModelAsyncScanRequestDataAttributes;
+import io.prismacloud.iac.commons.model.JsonApiModelScanTrigger;
+import io.prismacloud.iac.commons.model.JsonApiModelScanTriggerData;
+import io.prismacloud.iac.commons.model.JsonApiModelScanTriggerDataAttributes;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -83,6 +84,7 @@ public class PrismaCloudServiceImpl implements PrismaCloudService {
      * @throws ParseException
      * @throws IOException
      */
+    @SuppressFBWarnings({"RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"})
     private String generateToken(PrismaCloudConfiguration prismaCloudConfiguration)
         throws ParseException, IOException {
         logger.debug("Entered into PrismaCloudServiceImpl.generateToken");
@@ -129,6 +131,7 @@ public class PrismaCloudServiceImpl implements PrismaCloudService {
      * @return
      * @throws IOException
      */
+    @SuppressFBWarnings({"RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"})
   public String getScanResult(PrismaCloudConfiguration prismaCloudConfiguration, String filePath)
       throws IOException, InterruptedException {
     String responseBody = "";

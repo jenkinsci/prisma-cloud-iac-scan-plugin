@@ -15,8 +15,8 @@
  */
 package io.prismacloud.iac.jenkins;
 
-import com.prismacloud.config.PrismaCloudConfiguration;
-import com.prismacloud.service.impl.PrismaCloudServiceImpl;
+import io.prismacloud.iac.commons.config.PrismaCloudConfiguration;
+import io.prismacloud.iac.commons.service.impl.PrismaCloudServiceImpl;
 import hudson.Extension;
 import hudson.util.FormValidation;
 import hudson.util.Secret;

@@ -5,7 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
-import com.prismacloud.util.JSONUtils;
+import io.prismacloud.iac.commons.util.JSONUtils;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.model.Run;
 import io.prismacloud.iac.jenkins.dto.ErrorDetail;

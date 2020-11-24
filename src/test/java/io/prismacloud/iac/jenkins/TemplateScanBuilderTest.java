@@ -4,8 +4,8 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.spy;
 
 
-import com.prismacloud.config.PrismaCloudConfiguration;
-import com.prismacloud.service.impl.PrismaCloudServiceImpl;
+import io.prismacloud.iac.commons.config.PrismaCloudConfiguration;
+import io.prismacloud.iac.commons.service.impl.PrismaCloudServiceImpl;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.Run;
