@@ -7,6 +7,7 @@ import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 import io.prismacloud.iac.commons.config.PrismaCloudConfiguration;
 import io.prismacloud.iac.commons.service.impl.PrismaCloudServiceImpl;
+import io.prismacloud.iac.commons.util.ConfigYmlTagsUtil;
 import io.prismacloud.iac.commons.util.JSONUtils;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.AbortException;
@@ -22,6 +23,7 @@ import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nonnull;
@@ -34,85 +36,99 @@ import org.kohsuke.stapler.QueryParameter;
 
 public class TemplateScanBuilder  extends Builder implements SimpleBuildStep {
 
-	private String hostname;
-	private String low;
-	private String medium;
-	private String operator;
-	private String high;
-	private String assetname;
-	private String templatetype;
-	private String templateversion;
+	private String assetName;
+	private String templateType;
+	private String templateVersion;
 	private String tags;
-    private boolean apiResponseError;
-    private String jobName;
+	private String failureCriteriaHigh;
+	private String failureCriteriaMedium;
+	private String failureCriteriaLow;
+	private String failureCriteriaOperator;
+	private boolean apiResponseError;
 
-	public String getHostname() {
-		return hostname;
+	@DataBoundConstructor
+	public TemplateScanBuilder(
+			String assetName,
+			String templateType,
+			String templateVersion,
+			String tags,
+			String failureCriteriaHigh,
+			String failureCriteriaLow,
+			String failureCriteriaMedium,
+			String failureCriteriaOperator) {
+		this.assetName = assetName;
+		this.templateType = templateType;
+		this.templateVersion = templateVersion;
+		this.tags = tags;
+		this.failureCriteriaHigh = failureCriteriaHigh;
+		this.failureCriteriaMedium = failureCriteriaMedium;
+		this.failureCriteriaLow = failureCriteriaLow;
+		this.failureCriteriaOperator = failureCriteriaOperator;
 	}
 
-	public void setHostname(String hostname) {
-		this.hostname = hostname;
+	public String getAssetName() {
+		return assetName;
 	}
 
-	public String getHigh() { return high; }
-
-	public void setHigh(String high) {
-		this.high = high;
+	public void setAssetName(String assetName) {
+		this.assetName = assetName;
 	}
 
-	public String getLow() {
-		return low;
+	public String getTemplateType() {
+		return templateType;
 	}
 
-	public void setLow(String low) {
-		this.low = low;
+	public void setTemplateType(String templateType) {
+		this.templateType = templateType;
 	}
 
-	public String getMedium() {
-		return medium;
+	public String getTemplateVersion() {
+		return templateVersion;
 	}
 
-	public void setMedium(String medium) {
-		this.medium = medium;
+	public void setTemplateVersion(String templateVersion) {
+		this.templateVersion = templateVersion;
 	}
 
-	public String getOperator() {
-		return operator;
+	public String getTags() {
+		return tags;
 	}
 
-	public void setOperator(String operator) {
-		this.operator = operator;
+	public void setTags(String tags) {
+		this.tags = tags;
 	}
 
-	public String getAssetname() { return assetname; }
+	public String getFailureCriteriaHigh() {
+		return failureCriteriaHigh;
+	}
 
-	public void setAssetname(String assetname) { this.assetname = assetname; }
+	public void setFailureCriteriaHigh(String failureCriteriaHigh) {
+		this.failureCriteriaHigh = failureCriteriaHigh;
+	}
 
-	public String getTemplatetype() { return templatetype; }
+	public String getFailureCriteriaMedium() {
+		return failureCriteriaMedium;
+	}
 
-	public void setTemplatetype(String templatetype) { this.templatetype = templatetype; }
+	public void setFailureCriteriaMedium(String failureCriteriaMedium) {
+		this.failureCriteriaMedium = failureCriteriaMedium;
+	}
 
-	public String getTemplateversion() { return templateversion; }
+	public String getFailureCriteriaLow() {
+		return failureCriteriaLow;
+	}
 
-	public void setTemplateversion(String templateversion) { this.templateversion = templateversion; }
+	public void setFailureCriteriaLow(String failureCriteriaLow) {
+		this.failureCriteriaLow = failureCriteriaLow;
+	}
 
-	public String getTags() { return tags; }
+	public String getFailureCriteriaOperator() {
+		return failureCriteriaOperator;
+	}
 
-	public void setTags(String tags) { this.tags = tags; }
-
-
-    @DataBoundConstructor
-    public TemplateScanBuilder(String hostName, String high, String low, String medium, String operator, String assetname, String tags, String templatetype, String templateversion) {
-    	this.hostname = hostName;
-    	this.high = high;
-    	this.low = low;
-    	this.medium = medium;
-    	this.operator = operator;
-    	this.assetname = assetname;
-    	this.tags = tags;
-    	this.templatetype = templatetype;
-    	this.templateversion = templateversion;
-    }
+	public void setFailureCriteriaOperator(String failureCriteriaOperator) {
+		this.failureCriteriaOperator = failureCriteriaOperator;
+	}
 
 	/**
 	 * Below method is triggered when jenkins build is triggered.
@@ -124,22 +140,34 @@ public class TemplateScanBuilder  extends Builder implements SimpleBuildStep {
 		File sourceFolder = new File(workspace.getRemote());
 		sourceFolder.setWritable(true);
 
-		File destinationFile = new File(sourceFolder+"/iacscan.zip");
+		File destinationFile = new File(sourceFolder + "/iacscan.zip");
 		destinationFile.setWritable(true);
 
-		this.jobName = build.getDisplayName();
+		String jobName = build.getDisplayName();
  		//Create zip file
 		boolean isZipFileCreated = createZipFile(sourceFolder, destinationFile);
 
-		String result = new String();
+		Map<String, String> configFileTags;
+
+		File configYmlFile = new File(sourceFolder, ".prismaCloud/config.yml");
+		File configYamlFile = new File(sourceFolder, ".prismaCloud/config.yaml");
+		if (configYmlFile.exists() && configYmlFile.isFile() && configYmlFile.canRead()) {
+			configFileTags = ConfigYmlTagsUtil.readTags(listener.getLogger(), configYmlFile);
+		} else if (configYamlFile.exists() && configYamlFile.isFile() && configYamlFile.canRead()) {
+			configFileTags = ConfigYmlTagsUtil.readTags(listener.getLogger(), configYamlFile);
+		} else {
+			configFileTags = Collections.emptyMap();
+		}
+
 		boolean buildStatus = false;
 		listener.getLogger().println("------------------------- Prisma Cloud IAC----------------------");
 
 		if (isZipFileCreated) {
 			listener.getLogger().println("Calling Prisma Cloud IaC Scan API " + destinationFile.getAbsolutePath());
-			result = callPrismaCloudAsyncEndPoint(destinationFile.getAbsolutePath(), listener, workspace.getRemote());
+			String result = callPrismaCloudAsyncEndPoint(destinationFile.getAbsolutePath(), listener, workspace.getRemote(), jobName, configFileTags);
 			buildStatus = checkSeverity(result, listener);
-			build.addAction(new ScanResultAction(result, buildStatus, getSevirityMap(high, medium, low, operator), apiResponseError));
+			build.addAction(new ScanResultAction(result, buildStatus,
+					getSevirityMap(failureCriteriaHigh, failureCriteriaMedium, failureCriteriaLow, failureCriteriaOperator), apiResponseError));
 		} else {
 			throw new AbortException("Zipfile Failed to create");
 		}
@@ -162,8 +190,8 @@ public class TemplateScanBuilder  extends Builder implements SimpleBuildStep {
 	 */
 	@Extension
 	@Symbol("prismaIaC")
-    public static class Descriptor extends BuildStepDescriptor<Builder> {
-        @Override
+	public static class Descriptor extends BuildStepDescriptor<Builder> {
+		@Override
 		public boolean isApplicable(Class<? extends AbstractProject> aClass) {
 			return true;
 		}
@@ -245,7 +273,9 @@ public class TemplateScanBuilder  extends Builder implements SimpleBuildStep {
 	 * Below method calls the prisma cloud API and get result through common module
 	 */
 	@SuppressFBWarnings({"UC_USELESS_OBJECT", "DLS_DEAD_LOCAL_STORE", "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"})
-	public String callPrismaCloudAsyncEndPoint(String filePath, TaskListener listener, String workspace) throws IOException, InterruptedException {
+	public String callPrismaCloudAsyncEndPoint(
+			String filePath, TaskListener listener, String workspace, String jobName, Map<String, String> configFileTags)
+			throws IOException, InterruptedException {
 		listener.getLogger().println("callPrismaCloudAsyncEndPoint =====Workspace======"+workspace);
 		Config descriptor = (Config)Jenkins.get().getDescriptor(Config.class);
 		PrismaCloudServiceImpl prismaCloudService = new PrismaCloudServiceImpl();
@@ -254,18 +284,19 @@ public class TemplateScanBuilder  extends Builder implements SimpleBuildStep {
 		prismaCloudConfiguration.setAccessKey(descriptor.getUsername());
 		prismaCloudConfiguration.setScanUrl(descriptor.getAddress()+"/iac/v2/scans");
 		prismaCloudConfiguration.setSecretKey(descriptor.getPassword());
-		prismaCloudConfiguration.setTemplateType(templatetype);
-		prismaCloudConfiguration.setTemplateVersion(templateversion);
-		prismaCloudConfiguration.setAssetName(assetname);
+		prismaCloudConfiguration.setTemplateType(templateType);
+		prismaCloudConfiguration.setTemplateVersion(templateVersion);
+		prismaCloudConfiguration.setAssetName(assetName);
 		prismaCloudConfiguration.setTags(tags);
 		prismaCloudConfiguration.setAssetType("Jenkins");
-		prismaCloudConfiguration.setHigh(Integer.parseInt(high));
-		prismaCloudConfiguration.setLow(Integer.parseInt(low));
-		prismaCloudConfiguration.setMedium(Integer.parseInt(medium));
-		prismaCloudConfiguration.setOperator(operator);
+		prismaCloudConfiguration.setHigh(Integer.parseInt(failureCriteriaHigh));
+		prismaCloudConfiguration.setMedium(Integer.parseInt(failureCriteriaMedium));
+		prismaCloudConfiguration.setLow(Integer.parseInt(failureCriteriaLow));
+		prismaCloudConfiguration.setOperator(failureCriteriaOperator);
 		prismaCloudConfiguration.setBuildNumber(String.valueOf(getJenkinsBuildNumber()));
 		prismaCloudConfiguration.setCurrentUserName(User.current().getFullName());
-		prismaCloudConfiguration.setJobName(this.jobName);
+		prismaCloudConfiguration.setJobName(jobName);
+		prismaCloudConfiguration.setConfigFileTags(configFileTags);
 		return prismaCloudService.getScanDetails(prismaCloudConfiguration, filePath);
 	}
 
