@@ -13,19 +13,19 @@
     so it should be straightforward to find them.
   -->
   <f:section title="Prisma Cloud">
-    <f:entry field="address" title="Auth URL" description="Prisma Cloud Auth URL, formatted as https://authURL">
+    <f:entry field="prismaCloudApiUrl" title="Prisma Cloud API URL" description="Prisma Cloud API URL">
         <f:textbox  checkMethod="post"/>
     </f:entry>
 
-    <f:entry field="username" title="Access Key" description="Prisma Cloud access key used to authenticate to the Prisma Cloud API">
+    <f:entry field="prismaCloudAccessKey" title="Access Key" description="Prisma Cloud Access Key used to authenticate to the Prisma Cloud API">
         <f:textbox  checkMethod="post"/>
     </f:entry>
 
-    <f:entry field="password" title="Secret Key" description="Prisma Cloud secret key">
+    <f:entry field="prismaCloudSecretKey" title="Secret Key" description="Prisma Cloud Secret Key used to authenticate to the Prisma Cloud API">
         <f:password checkMethod="post" />
     </f:entry>
     <f:validateButton
           title="Test Connection" progress="Testing..."
-          method="testConnection" with="address,username,password" />
+          method="testConnection" with="prismaCloudApiUrl,prismaCloudAccessKey,prismaCloudSecretKey" />
   </f:section>
 </j:jelly>

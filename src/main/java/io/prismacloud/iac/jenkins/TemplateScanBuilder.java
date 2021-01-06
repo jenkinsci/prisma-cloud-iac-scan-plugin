@@ -201,9 +201,9 @@ public class TemplateScanBuilder  extends Builder implements SimpleBuildStep {
 			return "Prisma Cloud IaC Scan";
 		}
 
-		public FormValidation doCheckHigh(@QueryParameter String high) {
+		public FormValidation doCheckFailureCriteriaHigh(@QueryParameter String failureCriteriaHigh) {
 			try {
-				if (Integer.parseInt(high) >= 0) {
+				if (Integer.parseInt(failureCriteriaHigh) >= 0) {
 					return FormValidation.ok();
 				} else {
 					return FormValidation.error("Please Enter Valid Number");
@@ -213,9 +213,9 @@ public class TemplateScanBuilder  extends Builder implements SimpleBuildStep {
 			}
 		}
 
-		public FormValidation doCheckLow(@QueryParameter String low) {
+		public FormValidation doCheckFailureCriteriaLow(@QueryParameter String failureCriteriaLow) {
 			try {
-				if (Integer.parseInt(low) >= 0) {
+				if (Integer.parseInt(failureCriteriaLow) >= 0) {
 					return FormValidation.ok();
 				} else {
 					return FormValidation.error("Please Enter Valid Number");
@@ -225,9 +225,9 @@ public class TemplateScanBuilder  extends Builder implements SimpleBuildStep {
 			}
 		}
 
-		public FormValidation doCheckMedium(@QueryParameter String medium) {
+		public FormValidation doCheckFailureCriteriaMedium(@QueryParameter String failureCriteriaMedium) {
 			try {
-				if (Integer.parseInt(medium) >= 0) {
+				if (Integer.parseInt(failureCriteriaMedium) >= 0) {
 					return FormValidation.ok();
 				} else {
 					return FormValidation.error("Please Enter Valid Number");
@@ -237,10 +237,10 @@ public class TemplateScanBuilder  extends Builder implements SimpleBuildStep {
 			}
 		}
 
-		public FormValidation doCheckOperator(@QueryParameter String operator) {
+		public FormValidation doCheckFailureCriteriaOperator(@QueryParameter String failureCriteriaOperator) {
 			try {
-				if (operator.equalsIgnoreCase("and")
-						|| operator.equalsIgnoreCase("or")) {
+				if (failureCriteriaOperator.equalsIgnoreCase("and")
+						|| failureCriteriaOperator.equalsIgnoreCase("or")) {
 					return FormValidation.ok();
 				} else {
 					return FormValidation.error("Allowed Operators are [and,or]");
@@ -250,18 +250,18 @@ public class TemplateScanBuilder  extends Builder implements SimpleBuildStep {
 			}
 		}
 
-		public FormValidation doCheckTemplatetype(@QueryParameter String templatetype) {
-				if (templatetype.length() >= 0 && (templatetype.equalsIgnoreCase("TF")
-						|| templatetype.equalsIgnoreCase("CFT")
-						|| templatetype.equalsIgnoreCase("K8S"))) {
+		public FormValidation doCheckTemplateType(@QueryParameter String templateType) {
+				if (templateType.length() >= 0 && (templateType.equalsIgnoreCase("TF")
+						|| templateType.equalsIgnoreCase("CFT")
+						|| templateType.equalsIgnoreCase("K8S"))) {
 					return FormValidation.ok();
 				} else {
 					return FormValidation.error("Please Enter Valid Template Type [TF, CFT, K8S]");
 				}
 		}
 
-		public FormValidation doCheckAssetname(@QueryParameter String assetname) {
-			if (assetname.length() > 0 && assetname.length()  < 255 ) {
+		public FormValidation doCheckAssetName(@QueryParameter String assetName) {
+			if (assetName.length() > 0 && assetName.length()  < 255 ) {
 				return FormValidation.ok();
 			} else {
 				return FormValidation.error("Asset Name charactor length should be in between 0 to 255");
@@ -280,10 +280,14 @@ public class TemplateScanBuilder  extends Builder implements SimpleBuildStep {
 		Config descriptor = (Config)Jenkins.get().getDescriptor(Config.class);
 		PrismaCloudServiceImpl prismaCloudService = new PrismaCloudServiceImpl();
 		PrismaCloudConfiguration prismaCloudConfiguration = new PrismaCloudConfiguration();
-		prismaCloudConfiguration.setAuthUrl(descriptor.getAddress()+"/login");
-		prismaCloudConfiguration.setAccessKey(descriptor.getUsername());
-		prismaCloudConfiguration.setScanUrl(descriptor.getAddress()+"/iac/v2/scans");
-		prismaCloudConfiguration.setSecretKey(descriptor.getPassword());
+		String apiUrl = descriptor.getPrismaCloudApiUrl();
+		if (apiUrl.endsWith("/")) {
+			apiUrl = apiUrl.substring(0, apiUrl.length() - 1);
+		}
+		prismaCloudConfiguration.setAuthUrl(apiUrl + "/login");
+		prismaCloudConfiguration.setScanUrl(apiUrl + "/iac/v2/scans");
+		prismaCloudConfiguration.setAccessKey(descriptor.getPrismaCloudAccessKey());
+		prismaCloudConfiguration.setSecretKey(descriptor.getPrismaCloudSecretKey());
 		prismaCloudConfiguration.setTemplateType(templateType);
 		prismaCloudConfiguration.setTemplateVersion(templateVersion);
 		prismaCloudConfiguration.setAssetName(assetName);
