@@ -1,6 +1,7 @@
 package io.prismacloud.iac.jenkins;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyMap;
 import static org.mockito.Mockito.spy;
 
 
@@ -13,6 +14,7 @@ import hudson.model.TaskListener;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Before;
@@ -20,6 +22,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
+import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -59,12 +62,12 @@ public class TemplateScanBuilderTest {
 
   @Test
   public void testPerform() throws IOException, InterruptedException {
-    templateScanBuilder = spy(new TemplateScanBuilder("localhost","5","0","19", "and","MAVEN_test", "me.sacumen; team: plugin", "tf", "1.0"));
+    templateScanBuilder = spy(new TemplateScanBuilder("MAVEN_test", "me.sacumen; team: plugin", "tf", "1.0", "5","0","19", "and"));
     prismaCloudServiceImpl = spy(new PrismaCloudServiceImpl());
 
     Mockito.doReturn(scanResult).when(prismaCloudServiceImpl).getScanDetails(any(PrismaCloudConfiguration.class), any(String.class));
     Mockito.doReturn(printStream).when(listener).getLogger();
-    Mockito.doReturn(scanResult).when(templateScanBuilder).callPrismaCloudAsyncEndPoint(any(String.class),any(TaskListener.class), any(String.class));
+    Mockito.doReturn(scanResult).when(templateScanBuilder).callPrismaCloudAsyncEndPoint(any(String.class),any(TaskListener.class), any(String.class), any(String.class), anyMap());
     Mockito.doReturn(true).when(templateScanBuilder).checkSeverity(any(String.class), any(TaskListener.class));
     Mockito.doReturn(propertiesMap).when(templateScanBuilder).getSevirityMap(any(String.class),any(String.class),any(String.class),any(String.class));
     Mockito.doReturn(true).when(templateScanBuilder).createZipFile(any(File.class), any(File.class));

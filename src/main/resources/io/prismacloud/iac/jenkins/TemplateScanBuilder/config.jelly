@@ -1,27 +1,27 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-    <f:entry title="Asset Name" field="assetname">
+    <f:entry title="Asset Name" field="assetName">
         <f:textbox />
     </f:entry>
     <f:entry title="Tags" field="tags">
         <f:textbox />
     </f:entry>
-    <f:entry title="Template Type" field="templatetype">
+    <f:entry title="Template Type" field="templateType">
         <f:textbox />
     </f:entry>
-    <f:entry title="Template Version" field="templateversion">
+    <f:entry title="Template Version" field="templateVersion">
         <f:textbox />
     </f:entry>
-    <f:entry title="Failure Criteria [ High ]" field="high">
+    <f:entry title="Failure Criteria [ High ]" field="failureCriteriaHigh">
         <f:textbox />
     </f:entry>
-    <f:entry title="Failure Criteria [ Medium ]" field="medium">
+    <f:entry title="Failure Criteria [ Medium ]" field="failureCriteriaMedium">
             <f:textbox />
     </f:entry>
-    <f:entry title="Failure Criteria [ Low ]" field="low">
+    <f:entry title="Failure Criteria [ Low ]" field="failureCriteriaLow">
         <f:textbox />
     </f:entry>
-    <f:entry title="Failure Criteria [ Operator ]" field="operator">
+    <f:entry title="Failure Criteria [ Operator ]" field="failureCriteriaOperator">
             <f:textbox />
     </f:entry>
 </j:jelly>

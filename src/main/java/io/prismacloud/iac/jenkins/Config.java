@@ -31,9 +31,9 @@ import org.kohsuke.stapler.verb.POST;
 public final class Config
 extends GlobalConfiguration {
     private static final String versionCheckMessage = "Jenkins plugin version: %s doesn't match Console version: %s. You can download a matching version of Jenkins plugin from ";
-    private String address;
-    private Secret username;
-    private Secret password;
+    private String prismaCloudApiUrl;
+    private Secret prismaCloudAccessKey;
+    private Secret prismaCloudSecretKey;
 
     public static Config get() { return (Config)((Object)GlobalConfiguration.all().get(Config.class));}
 
@@ -41,72 +41,79 @@ extends GlobalConfiguration {
         this.load();
     }
 
-    public String getUsername() {
-        return Secret.toString((Secret)this.username);
+    public String getPrismaCloudAccessKey() {
+        return Secret.toString((Secret)this.prismaCloudAccessKey);
     }
 
-    public String getPassword() {
-        return Secret.toString((Secret)this.password);
+    public String getPrismaCloudSecretKey() {
+        return Secret.toString((Secret)this.prismaCloudSecretKey);
     }
 
     @CheckForNull
-    public String getAddress() {
-        return this.address;
+    public String getPrismaCloudApiUrl() {
+        return this.prismaCloudApiUrl;
     }
 
     @DataBoundSetter
-    public void setAddress(String address) {
-        this.address = address;
+    public void setPrismaCloudApiUrl(String prismaCloudApiUrl) {
+        this.prismaCloudApiUrl = prismaCloudApiUrl;
         this.save();
     }
 
     @DataBoundSetter
-    public void setUsername(String username) {
-        this.username = Secret.fromString((String)username);
+    public void setPrismaCloudAccessKey(String prismaCloudAccessKey) {
+        this.prismaCloudAccessKey = Secret.fromString((String)prismaCloudAccessKey);
         this.save();
     }
 
     @DataBoundSetter
-    public void setPassword(String password) {
-        this.password = Secret.fromString((String)password);
+    public void setPrismaCloudSecretKey(String prismaCloudSecretKey) {
+        this.prismaCloudSecretKey = Secret.fromString((String)prismaCloudSecretKey);
         this.save();
     }
 
     @POST
-    public FormValidation doCheckUsername(@QueryParameter String value) {
-        if (value.length() == 0) {
+    public FormValidation doCheckPrismaCloudAccessKey(@QueryParameter String prismaCloudAccessKey) {
+        if (prismaCloudAccessKey.length() == 0) {
             return FormValidation.error((String)"Please set access key");
         }
         return FormValidation.ok();
     }
 
     @POST
-    public FormValidation doCheckPassword(@QueryParameter String value) {
-        if (value.length() == 0) {
+    public FormValidation doCheckPrismaCloudSecretKey(@QueryParameter String prismaCloudSecretKey) {
+        if (prismaCloudSecretKey.length() == 0) {
             return FormValidation.error((String)"Please set secret key");
         }
         return FormValidation.ok();
     }
 
     @POST
-    public FormValidation doCheckAddress(@QueryParameter String value) {
-        if (value.length() == 0) {
-            return FormValidation.error((String)"Please set auth URL");
+    public FormValidation doCheckPrismaCloudApiUrl(@QueryParameter String prismaCloudApiUrl) {
+        if (prismaCloudApiUrl.length() == 0) {
+            return FormValidation.error((String)"Please set Prisma Cloud API URL");
         }
-        if (value.indexOf(58) == -1 || value.indexOf("https://") == -1) {
-            return FormValidation.error((String)"Format is https://<authURL>");
+        if (prismaCloudApiUrl.indexOf(58) == -1 || prismaCloudApiUrl.indexOf("https://") == -1) {
+            return FormValidation.error((String)"Format is https://<api_domain>");
         }
         return FormValidation.ok();
     }
 
-    public FormValidation doTestConnection(@QueryParameter(value="address") String address, @QueryParameter(value="username") String username, @QueryParameter(value="password") String password) {
+    public FormValidation doTestConnection(
+        @QueryParameter(value="prismaCloudApiUrl") String prismaCloudApiUrl,
+        @QueryParameter(value="prismaCloudAccessKey") String prismaCloudAccessKey,
+        @QueryParameter(value="prismaCloudSecretKey") String prismaCloudSecretKey) {
         Jenkins.get().checkPermission(Jenkins.ADMINISTER);
         try {
             PrismaCloudServiceImpl prismaCloudService = new PrismaCloudServiceImpl();
             PrismaCloudConfiguration prismaCloudConfiguration = new PrismaCloudConfiguration();
-            prismaCloudConfiguration.setAuthUrl(address.concat("/login"));
-            prismaCloudConfiguration.setAccessKey(username);
-            prismaCloudConfiguration.setSecretKey(password);
+            String apiUrl = prismaCloudApiUrl;
+            if (apiUrl.endsWith("/")) {
+                apiUrl = apiUrl.substring(0, apiUrl.length() - 1);
+            }
+            prismaCloudConfiguration.setAuthUrl(apiUrl + "/login");
+            prismaCloudConfiguration.setAccessKey(prismaCloudAccessKey);
+            prismaCloudConfiguration.setSecretKey(prismaCloudSecretKey);
             String authToken = prismaCloudService.getAccessToken(prismaCloudConfiguration);
             if (authToken.equals("")) {
                 return FormValidation.error((String)("Failed to authenticate with server"));

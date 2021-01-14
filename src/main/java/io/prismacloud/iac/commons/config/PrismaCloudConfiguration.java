@@ -1,5 +1,7 @@
 package io.prismacloud.iac.commons.config;
 
+import java.util.Map;
+
 /**
  * This class holds the configuration for the prisma cloud settings.
  */
@@ -21,6 +23,7 @@ public class PrismaCloudConfiguration {
   private int medium;
   private int low;
   private String operator;
+  private Map<String, String> configFileTags;
 
   public String getOperator() {
     return operator;
@@ -119,4 +122,12 @@ public class PrismaCloudConfiguration {
   public String getCurrentUserName() { return currentUserName; }
 
   public void setCurrentUserName(String currentUserName) { this.currentUserName = currentUserName; }
+
+  public Map<String, String> getConfigFileTags() {
+    return configFileTags;
+  }
+
+  public void setConfigFileTags(Map<String, String> configFileTags) {
+    this.configFileTags = configFileTags;
+  }
 }

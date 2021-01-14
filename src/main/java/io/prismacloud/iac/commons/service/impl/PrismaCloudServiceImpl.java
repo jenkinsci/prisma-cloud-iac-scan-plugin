@@ -9,6 +9,7 @@ import com.google.gson.stream.JsonReader;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.prismacloud.iac.commons.config.PrismaCloudConfiguration;
 import io.prismacloud.iac.commons.model.JsonApiModelFailureCriteria;
+import io.prismacloud.iac.commons.util.ConfigYmlTagsUtil;
 import io.prismacloud.iac.commons.util.JSONUtils;
 import io.prismacloud.iac.commons.service.PrismaCloudService;
 import io.prismacloud.iac.commons.model.IacTemplateParameters;
@@ -292,14 +293,17 @@ public class PrismaCloudServiceImpl implements PrismaCloudService {
     JsonApiModelAsyncScanRequestDataAttributes jsonApiModelAsyncScanRequestDataAttributes = new JsonApiModelAsyncScanRequestDataAttributes();
 
     //Setting tags
-    String tagsArray[] = prismaCloudConfiguration.getTags().split(",");
     Map<String, String> iacScanTagsMap = new HashMap<>();
+    Map<String, String> configFileTags = prismaCloudConfiguration.getConfigFileTags();
+    if (configFileTags != null && !configFileTags.isEmpty()) {
+      iacScanTagsMap.putAll(configFileTags);
+    }
 
-    for (int i = 0; i < tagsArray.length; i++) {
-      String tag[] = tagsArray[i].split(":");
-      if (tag[0] != null) {
-        String value = (tag[1] == null) ? "" : tag[1].trim();
-        iacScanTagsMap.put(tag[0].trim(), value);
+    String tagsString = prismaCloudConfiguration.getTags();
+    if (tagsString != null && !(tagsString = tagsString.trim()).isEmpty()) {
+      String[] tagsArray = tagsString.split(",");
+      for (String s : tagsArray) {
+        ConfigYmlTagsUtil.parseAndSetTag(s, iacScanTagsMap);
       }
     }
     jsonApiModelAsyncScanRequestDataAttributes.setTags(iacScanTagsMap);
