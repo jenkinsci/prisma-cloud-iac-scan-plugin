@@ -42,7 +42,7 @@ public class ScanResultAction implements RunAction2 {
                           Map<String, String> map, boolean apiResponseError, TaskListener listener) {
 
     if(null != listener) {
-      listener.getLogger().println("Executing Scan Result Action ....");
+      listener.getLogger().println("Prisma Cloud IaC Scan: Executing Scan Result Action ....");
     }
 
     // if (apiResponseError) {
