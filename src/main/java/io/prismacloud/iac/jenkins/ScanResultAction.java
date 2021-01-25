@@ -5,17 +5,16 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
+import hudson.model.TaskListener;
 import io.prismacloud.iac.commons.util.JSONUtils;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.model.Run;
 import io.prismacloud.iac.jenkins.dto.ErrorDetail;
 import io.prismacloud.iac.jenkins.dto.Issue;
 import io.prismacloud.iac.jenkins.dto.ScanResult;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
+
 import jenkins.model.RunAction2;
 import org.apache.commons.collections.CollectionUtils;
 
@@ -35,13 +34,18 @@ public class ScanResultAction implements RunAction2 {
   private String status;
   private List<ErrorDetail> errorResponseList;
 
+
   private Map<String, String> severityMap;
 
   @SuppressFBWarnings({"UC_USELESS_OBJECT"})
   public ScanResultAction(String scanResultJsonFile, boolean buildStatus,
-                          Map<String, String> map, boolean apiResponseError) {
+                          Map<String, String> map, boolean apiResponseError, TaskListener listener) {
 
-    if (apiResponseError) {
+    if(null != listener) {
+      listener.getLogger().println("Executing Scan Result Action ....");
+    }
+
+    // if (apiResponseError) {
       //Read main Response
       JsonReader reader = JSONUtils.parseJSONWitReader(scanResultJsonFile);
       JsonObject jsonObjectParent = JsonParser.parseReader(reader).getAsJsonObject();
@@ -64,14 +68,18 @@ public class ScanResultAction implements RunAction2 {
         JsonObject jsonObjectChild = jsonElementParent.getAsJsonObject();
 
         //Get Error details
-        JsonElement jsonElementError = jsonObjectChild.get("errorDetails");
-        JsonArray jsonArray = jsonElementError.getAsJsonArray();
-        errorResponseList = getErrorResponse(jsonArray);
+        if(jsonObjectChild.has("errorDetails")) {
+          JsonElement jsonElementError = jsonObjectChild.get("errorDetails");
+          JsonArray jsonArray = jsonElementError.getAsJsonArray();
+          errorResponseList = getErrorResponse(jsonArray);
+        }
       }
+
+
       this.apiError = apiResponseError;
-    } else {
-      JsonReader reader = JSONUtils.parseJSONWitReader(scanResultJsonFile);
-      JsonObject jsonObject = JsonParser.parseReader(reader).getAsJsonObject();
+     // } else {
+      JsonReader scanreader = JSONUtils.parseJSONWitReader(scanResultJsonFile);
+      JsonObject jsonObject = JsonParser.parseReader(scanreader).getAsJsonObject();
 
       if (jsonObject.has("meta")) {
         JsonObject summery = jsonObject.get("meta").getAsJsonObject();
@@ -97,12 +105,30 @@ public class ScanResultAction implements RunAction2 {
         scanResult.setLowPercentage(lowPercentage);
         scanResult.setTotalIssues(total);
 
-        //set build status
+
+        if(jsonObjectParent.has("processingStatus")) {
+          if (jsonObjectParent.get("processingStatus") != null) {
+            String processingStatusResult = jsonObjectParent.get("processingStatus").toString().replace("\"", "");
+            //Remove double quotes if exist
+            if (processingStatusResult.equalsIgnoreCase("passed")) {
+              status = "Passed";
+            } else {
+              status = "Failed";
+            }
+
+            listener.getLogger().println("Prisma Cloud IaC Scan: Final status from IaC Scan " + status);
+
+          }
+        }
+
+
+
+        /*//set build status
         if (buildStatus) {
           status = "Passed";
         } else {
           status = "Failed";
-        }
+        }*/
         severityMap = map;
         severityMap.put("Status", status);
 
@@ -111,7 +137,7 @@ public class ScanResultAction implements RunAction2 {
         if (jsonObject.has("data")) {
           scanResults = new ArrayList<>();
           List<Issue> highSeverityIssueList = new ArrayList<>();
-          List<Issue> mediunSeverityIssueList = new ArrayList<>();
+          List<Issue> mediumSeverityIssueList = new ArrayList<>();
           List<Issue> lowSeverityIssueList = new ArrayList<>();
 
           for (int index = 0; index < rulesMatchedJsonArray.size(); index++) {
@@ -119,34 +145,49 @@ public class ScanResultAction implements RunAction2 {
             JsonObject jsonAttributes =
                 rulesMatchedJsonArray.get(index).getAsJsonObject().get("attributes")
                     .getAsJsonObject();
+
             String severity = jsonAttributes.get("severity").getAsString();
             String name = jsonAttributes.get("name").getAsString();
             String file = getfileNames(jsonAttributes.get("files").getAsJsonArray());
+            List<String> filesList = new ArrayList<>();
+            if(file != null && !file.equalsIgnoreCase("")) {
+              filesList = Arrays.asList(file.split(","));
+            }
             String rule = jsonAttributes.get("rule").getAsString();
             String desc = jsonAttributes.get("desc").getAsString();
+            String docUrl = "";
+            if(jsonAttributes.has("docUrl")) {
+               docUrl = jsonAttributes.get("docUrl").getAsString();
+            }
+
             Issue issue = new Issue();
             issue.setSeverity(severity);
             issue.setName(name);
-            issue.setFile(file);
+            issue.setFiles(filesList);
             issue.setRule(rule);
             issue.setDesc(desc);
+            issue.setDocUrl(docUrl);
 
             if (severity.equalsIgnoreCase("high")) {
               highSeverityIssueList.add(issue);
             } else if (severity.equalsIgnoreCase("medium")) {
-              mediunSeverityIssueList.add(issue);
+              mediumSeverityIssueList.add(issue);
             } else if (severity.equalsIgnoreCase("low")) {
               lowSeverityIssueList.add(issue);
             }
           }
           scanResults.addAll(highSeverityIssueList);
-          scanResults.addAll(mediunSeverityIssueList);
+          scanResults.addAll(mediumSeverityIssueList);
           scanResults.addAll(lowSeverityIssueList);
+
+          if(null != listener) {
+            listener.getLogger().println("Prisma Cloud IaC Scan: Scan Results size : " + scanResults.size());
+          }
         } else {
           this.statusMessage = "No Issues found in Prisma Cloud IAC Scan.";
         }
       }
-    }
+   // }
   }
 
 
@@ -200,6 +241,8 @@ public class ScanResultAction implements RunAction2 {
   public int getLow() {
     return (int)  low;
   }
+
+
 
   public String getHighPercentage() { return highPercentage; }
 

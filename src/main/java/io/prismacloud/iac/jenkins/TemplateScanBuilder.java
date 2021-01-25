@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 import io.prismacloud.iac.commons.config.PrismaCloudConfiguration;
+import io.prismacloud.iac.commons.model.IacTemplateParameters;
 import io.prismacloud.iac.commons.service.impl.PrismaCloudServiceImpl;
 import io.prismacloud.iac.commons.util.ConfigYmlTagsUtil;
 import io.prismacloud.iac.commons.util.JSONUtils;
@@ -25,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import javax.annotation.Nonnull;
 import jenkins.model.Jenkins;
@@ -34,7 +36,9 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
+
 public class TemplateScanBuilder  extends Builder implements SimpleBuildStep {
+
 
 	private String assetName;
 	private String templateType;
@@ -137,15 +141,21 @@ public class TemplateScanBuilder  extends Builder implements SimpleBuildStep {
 	@SuppressFBWarnings({"DM_EXIT", "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE", "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE","DLS_DEAD_LOCAL_STORE", "DM_STRING_VOID_CTOR"})
     public void perform(@Nonnull Run build, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) {
 
+		listener.getLogger().println("Prisma Cloud IaC Scan: Custom Build Started");
+
 		File sourceFolder = new File(workspace.getRemote());
 		sourceFolder.setWritable(true);
+		listener.getLogger().println("Prisma Cloud IaC Scan: Source Folder : " + sourceFolder);
 
 		File destinationFile = new File(sourceFolder + "/iacscan.zip");
 		destinationFile.setWritable(true);
+		listener.getLogger().println("Prisma Cloud IaC Scan: Destination Folder : " + destinationFile);
 
 		String jobName = build.getDisplayName();
  		//Create zip file
 		boolean isZipFileCreated = createZipFile(sourceFolder, destinationFile);
+
+		listener.getLogger().println("Prisma Cloud IaC Scan: ZIP file Created : " + isZipFileCreated);
 
 		Map<String, String> configFileTags;
 
@@ -159,22 +169,34 @@ public class TemplateScanBuilder  extends Builder implements SimpleBuildStep {
 			configFileTags = Collections.emptyMap();
 		}
 
+		IacTemplateParameters iacTemplateParameters  = initializeIacTemplateParameters(sourceFolder, listener);
+
+		listener.getLogger().println("Prisma Cloud IaC Scan: Config YML files check completed");
+
 		boolean buildStatus = false;
-		listener.getLogger().println("------------------------- Prisma Cloud IAC----------------------");
+		listener.getLogger().println("Prisma Cloud IaC Scan: ------------------------- Prisma Cloud IAC----------------------");
 
 		if (isZipFileCreated) {
-			listener.getLogger().println("Calling Prisma Cloud IaC Scan API " + destinationFile.getAbsolutePath());
-			String result = callPrismaCloudAsyncEndPoint(destinationFile.getAbsolutePath(), listener, workspace.getRemote(), jobName, configFileTags);
+			listener.getLogger().println("Prisma Cloud IaC Scan: Calling Prisma Cloud IaC Scan API " + destinationFile.getAbsolutePath());
+			String result = callPrismaCloudAsyncEndPoint(destinationFile.getAbsolutePath(), listener, workspace.getRemote(), jobName, configFileTags, iacTemplateParameters);
 			buildStatus = checkSeverity(result, listener);
+			listener.getLogger().println("Prisma Cloud IaC Scan: Build Status value before processing results : " + buildStatus);
+			if(apiResponseError) {
+				listener.getLogger().println("Prisma Cloud IaC Scan: Api Error detected.....");
+			}
+			else {
+				listener.getLogger().println("Prisma Cloud IaC Scan: No Api Error detected....");
+			}
 			build.addAction(new ScanResultAction(result, buildStatus,
-					getSevirityMap(failureCriteriaHigh, failureCriteriaMedium, failureCriteriaLow, failureCriteriaOperator), apiResponseError));
+					getSeverityMap(failureCriteriaHigh, failureCriteriaMedium, failureCriteriaLow, failureCriteriaOperator), apiResponseError, listener));
 		} else {
-			throw new AbortException("Zipfile Failed to create");
+			throw new AbortException("Prisma Cloud IaC Scan: Zipfile Failed to create");
 		}
 
+		listener.getLogger().println("Prisma Cloud IaC Scan: Build status value after processing results : " + buildStatus);
 		//Report Build Complete, now show build status
 		if (buildStatus == false) {
-			throw new AbortException("Build Failed");
+			throw new AbortException("Prisma Cloud IaC Scan: Build Failed");
 		}
 	}
 
@@ -274,9 +296,9 @@ public class TemplateScanBuilder  extends Builder implements SimpleBuildStep {
 	 */
 	@SuppressFBWarnings({"UC_USELESS_OBJECT", "DLS_DEAD_LOCAL_STORE", "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"})
 	public String callPrismaCloudAsyncEndPoint(
-			String filePath, TaskListener listener, String workspace, String jobName, Map<String, String> configFileTags)
+			String filePath, TaskListener listener, String workspace, String jobName, Map<String, String> configFileTags, IacTemplateParameters iacTemplateParameters)
 			throws IOException, InterruptedException {
-		listener.getLogger().println("callPrismaCloudAsyncEndPoint =====Workspace======"+workspace);
+		listener.getLogger().println("Prisma Cloud IaC Scan: callPrismaCloudAsyncEndPoint =====Workspace======"+workspace);
 		Config descriptor = (Config)Jenkins.get().getDescriptor(Config.class);
 		PrismaCloudServiceImpl prismaCloudService = new PrismaCloudServiceImpl();
 		PrismaCloudConfiguration prismaCloudConfiguration = new PrismaCloudConfiguration();
@@ -284,8 +306,11 @@ public class TemplateScanBuilder  extends Builder implements SimpleBuildStep {
 		if (apiUrl.endsWith("/")) {
 			apiUrl = apiUrl.substring(0, apiUrl.length() - 1);
 		}
+
+		listener.getLogger().println("Prisma Cloud IaC Scan: API URL : " + apiUrl);
 		prismaCloudConfiguration.setAuthUrl(apiUrl + "/login");
 		prismaCloudConfiguration.setScanUrl(apiUrl + "/iac/v2/scans");
+		listener.getLogger().println("Prisma Cloud IaC Scan: Scan URL : " + apiUrl + "/iac/v2/scans");
 		prismaCloudConfiguration.setAccessKey(descriptor.getPrismaCloudAccessKey());
 		prismaCloudConfiguration.setSecretKey(descriptor.getPrismaCloudSecretKey());
 		prismaCloudConfiguration.setTemplateType(templateType);
@@ -301,32 +326,34 @@ public class TemplateScanBuilder  extends Builder implements SimpleBuildStep {
 		prismaCloudConfiguration.setCurrentUserName(User.current().getFullName());
 		prismaCloudConfiguration.setJobName(jobName);
 		prismaCloudConfiguration.setConfigFileTags(configFileTags);
+		prismaCloudConfiguration.setIacTemplateParameters(iacTemplateParameters);
 		return prismaCloudService.getScanDetails(prismaCloudConfiguration, filePath);
 	}
 
 	@SneakyThrows
 	@SuppressFBWarnings({"REC_CATCH_EXCEPTION"})
 	protected boolean checkSeverity(String result, TaskListener listener) {
-		//listener.getLogger().println("In checkSeverity");
+		listener.getLogger().println("Prisma Cloud IaC Scan: In checkSeverity");
+
 		try {
 
 			//Parsing result
 			JsonReader reader = JSONUtils.parseJSONWitReader(result);
 			JsonObject jsonObjectParent = JsonParser.parseReader(reader).getAsJsonObject();
-			listener.getLogger().println("*** processingStatus : " + jsonObjectParent.get("processingStatus"));
+			listener.getLogger().println("Prisma Cloud IaC Scan: *** processingStatus : " + jsonObjectParent.get("processingStatus"));
 			JsonElement jsonError = jsonObjectParent.get("errors");
 
 			if(jsonError != null) {
-				listener.getLogger().println("API Response " + result);
-				listener.getLogger().println("Please check Prisma Cloud IaC Scan Report");
+				listener.getLogger().println("Prisma Cloud IaC Scan: API Response Errors : errors element found " + result);
+				listener.getLogger().println("Prisma Cloud IaC Scan: Please check Prisma Cloud IaC Scan Report");
 				apiResponseError = true;
 				return true;
 			}
 
 			JsonElement jsonErr = jsonObjectParent.get("error");
 			if(jsonErr != null) {
-				listener.getLogger().println("API Response " + result);
-				listener.getLogger().println("Please check Prisma Cloud IaC Scan Report");
+				listener.getLogger().println("Prisma Cloud IaC Scan: API Response Error : error element found" + result);
+				listener.getLogger().println("Prisma Cloud IaC Scan: Please check Prisma Cloud IaC Scan Report");
 				apiResponseError = true;
 				return true;
 			}
@@ -335,12 +362,12 @@ public class TemplateScanBuilder  extends Builder implements SimpleBuildStep {
 			JsonElement jsonElementParent = jsonObjectParent.get("meta");
 			JsonObject jsonObjectChild = jsonElementParent.getAsJsonObject();
 
-			//Check if apihas errorDetails
+			//Check if api has errorDetails
 			JsonElement jsonElementError = jsonObjectChild.get("errorDetails");
 			JsonArray jsonForElementArray = jsonElementError.getAsJsonArray();
 			if (jsonForElementArray.size() > 0) {
-				listener.getLogger().println("API Response " + result);
-				listener.getLogger().println("Please check Prisma Cloud IaC Scan Report");
+				listener.getLogger().println("Prisma Cloud IaC Scan: API Response : error details" + result);
+				listener.getLogger().println("Prisma Cloud IaC Scan: Please check Prisma Cloud IaC Scan Report");
 				apiResponseError = true;
 				return true;
 			}
@@ -349,14 +376,14 @@ public class TemplateScanBuilder  extends Builder implements SimpleBuildStep {
 			if(jsonObjectParent.get("processingStatus") != null) {
 				String status = jsonObjectParent.get("processingStatus").toString().replace("\"", "");
 				//Remove double quotes if exist
-				listener.getLogger().println("status " + status);
+				listener.getLogger().println("Prisma Cloud IaC Scan: Status " + status);
 				if(status.equalsIgnoreCase("passed")){
 			       return true;
 				}
 			}
 			return false;
 		} catch (Exception exception) {
-			listener.getLogger().println("API Response " + result);
+			listener.getLogger().println("Prisma Cloud IaC Scan: API Response " + result);
 			apiResponseError = true;
 			return false;
 		}
@@ -370,12 +397,30 @@ public class TemplateScanBuilder  extends Builder implements SimpleBuildStep {
 	}
 
 	@SuppressFBWarnings({"NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"})
-	protected Map<String, String> getSevirityMap(String high, String medium, String low, String operator) {
+	protected Map<String, String> getSeverityMap(String high, String medium, String low, String operator) {
 		Map<String, String> severityLimitMap = new HashMap<>();
 		severityLimitMap.put("High", high);
 		severityLimitMap.put("Low", low);
 		severityLimitMap.put("Medium", medium);
 		severityLimitMap.put("Operator", operator);
 		return severityLimitMap;
+	}
+
+	@SuppressFBWarnings({"NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"})
+	public IacTemplateParameters initializeIacTemplateParameters(File sourceFolder, TaskListener listener) {
+		listener.getLogger().println("Prisma Cloud IaC Scan: Inside initializeIacTemplateParameters");
+
+		IacTemplateParameters iacTemplateParameters;
+
+		File configYmlFile = new File(sourceFolder, ".prismaCloud/config.yml");
+		File configYamlFile = new File(sourceFolder, ".prismaCloud/config.yaml");
+		if (configYmlFile.exists() && configYmlFile.isFile() && configYmlFile.canRead()) {
+			iacTemplateParameters = ConfigYmlTagsUtil.readTemplateParams(listener.getLogger(), configYmlFile);
+		} else if (configYamlFile.exists() && configYamlFile.isFile() && configYamlFile.canRead()) {
+			iacTemplateParameters = ConfigYmlTagsUtil.readTemplateParams(listener.getLogger(), configYamlFile);
+		} else {
+			iacTemplateParameters = new IacTemplateParameters();
+		}
+		return iacTemplateParameters;
 	}
 }

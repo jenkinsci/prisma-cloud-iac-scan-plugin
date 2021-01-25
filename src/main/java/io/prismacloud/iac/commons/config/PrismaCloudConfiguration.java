@@ -1,5 +1,7 @@
 package io.prismacloud.iac.commons.config;
 
+import io.prismacloud.iac.commons.model.IacTemplateParameters;
+
 import java.util.Map;
 
 /**
@@ -24,6 +26,7 @@ public class PrismaCloudConfiguration {
   private int low;
   private String operator;
   private Map<String, String> configFileTags;
+  private IacTemplateParameters iacTemplateParameters;
 
   public String getOperator() {
     return operator;
@@ -130,4 +133,8 @@ public class PrismaCloudConfiguration {
   public void setConfigFileTags(Map<String, String> configFileTags) {
     this.configFileTags = configFileTags;
   }
+
+  public IacTemplateParameters getIacTemplateParameters() { return iacTemplateParameters; }
+
+  public void setIacTemplateParameters(IacTemplateParameters iacTemplateParameters) { this.iacTemplateParameters = iacTemplateParameters; }
 }

@@ -1,6 +1,9 @@
 package io.prismacloud.iac.jenkins;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -9,6 +12,9 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 public class ZipUtils {
+
+    Logger logger = LoggerFactory.getLogger(ZipUtils.class);
+
     public void zipFolder(String sourceFilePath, String zipFilePath) throws IOException {
         ZipOutputStream zipOutputStream = new ZipOutputStream(new FileOutputStream(zipFilePath));
         File file = new File(sourceFilePath);
@@ -46,6 +52,8 @@ public class ZipUtils {
                     zipOutputStream.putNextEntry(zipEntry);
                     zipOutputStream.closeEntry();
                 }
+
+                logger.info("Adding file recursively to ZIP");
 
                 for (String aFileList : fileList) {
                     zipFiles(folderPath, filePath + File.separator + aFileList, zipOutputStream);

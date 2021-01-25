@@ -1,6 +1,7 @@
 package io.prismacloud.iac.commons.service;
 
 
+import hudson.model.TaskListener;
 import io.prismacloud.iac.commons.config.PrismaCloudConfiguration;
 import java.io.IOException;
 

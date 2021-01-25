@@ -1,11 +1,14 @@
 package io.prismacloud.iac.jenkins.dto;
 
+import java.util.List;
+
 public class Issue {
   private String severity;
   private String name;
-  private String file;
+  private List<String> files;
   private String rule;
   private String desc;
+  private String docUrl;
 
   public String getSeverity() {
     return severity;
@@ -23,14 +26,6 @@ public class Issue {
     this.name = name;
   }
 
-  public String getFile() {
-    return file;
-  }
-
-  public void setFile(String file) {
-    this.file = file;
-  }
-
   public String getRule() {
     return rule;
   }
@@ -45,5 +40,17 @@ public class Issue {
 
   public void setDesc(String desc) {
     this.desc = desc;
+  }
+
+  public String getDocUrl() { return docUrl; }
+
+  public void setDocUrl(String docUrl) { this.docUrl = docUrl; }
+
+  public List<String> getFiles() {
+    return files;
+  }
+
+  public void setFiles(List<String> files) {
+    this.files = files;
   }
 }
