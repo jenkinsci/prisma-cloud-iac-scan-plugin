@@ -23,7 +23,7 @@ public class ZipUtils {
         zipOutputStream.close();
     }
 
-    @SuppressFBWarnings({"OBL_UNSATISFIED_OBLIGATION", "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE","OS_OPEN_STREAM"})
+    @SuppressFBWarnings({"OBL_UNSATISFIED_OBLIGATION", "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE", "OS_OPEN_STREAM"})
     private void zipFiles(String folderPath, String filePath, ZipOutputStream zipOutputStream) throws IOException {
         if (zipOutputStream == null)
             return;
@@ -32,7 +32,7 @@ public class ZipUtils {
 
 
         if (!file.getName().equalsIgnoreCase("iacscan.zip") &&
-            !(file.isDirectory() && file.getName().startsWith("."))) {
+                !(file.isDirectory() && file.getName().startsWith("."))) {
             if (file.isFile()) {
                 ZipEntry zipEntry = new ZipEntry(filePath);
                 FileInputStream fileInputStream = new FileInputStream(file);

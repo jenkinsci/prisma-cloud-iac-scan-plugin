@@ -12,21 +12,16 @@
 
 package io.prismacloud.iac.commons.model;
 
-import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
 
 /**
  * IacTemplateParameters
  */
 
-@javax.annotation.Generated(value = "io.swagger.codegen.v3.generators.java.JavaClientCodegen", date = "2021-01-22T23:06:47.913567+05:30[Asia/Kolkata]")public class IacTemplateParameters {
+@javax.annotation.Generated(value = "io.swagger.codegen.v3.generators.java.JavaClientCodegen", date = "2021-01-26T11:29:52.304914+05:30[Asia/Kolkata]")public class IacTemplateParameters {
 
   @JsonProperty("variables")
 

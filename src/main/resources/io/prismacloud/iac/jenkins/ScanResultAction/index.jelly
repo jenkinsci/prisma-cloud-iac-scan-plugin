@@ -198,18 +198,12 @@
                     </div>
                 </j:if>
 
-                <j:if test="${size(it.scanResults) == 0}">
-                                 <j:if test="${it.apiError == false}">
-                                 <div class="-my-2 py-2 overflow-x-auto sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-                                   <p><strong> No Records Found!</strong></p>
-                                 </div>
-                                 </j:if>
-                                </j:if>
+
 
                 <br />
                 <br />
 
-                <j:if test="${it.apiError == true }">
+                <j:if test="${size(it.errorResponseList) > 0 }">
                                     <div class="-my-2 py-2 overflow-x-auto sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8" style="text-align: left;">
                                        <p><strong> Errors from Prisma Cloud IaC Scan</strong></p>
                                        <p><strong>${size(it.errorResponseList)} Errors</strong></p>
@@ -241,7 +235,12 @@
 
 
                                             </td>
-                                              <td class="px-6 py-4 whitespace-no-wrap border-b border-black-200" style="text-align: left;"> ${errorResponse.apiErrorMessage} </td>
+
+                                              <td class="px-6 py-4 whitespace-no-wrap border-b border-black-200" style="text-align: left;">
+                                              <j:forEach var="jvar_error" items="${errorResponse.apiErrorMessageList}" >
+                                                    <span class="text-sm leading-4 text-black-700" style="text-align: left;">${jvar_error}</span> <br />
+                                              </j:forEach>
+                                              </td>
                                             </tr>
                                             </j:forEach>
 

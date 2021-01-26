@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.ParseException;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -42,24 +43,24 @@ import org.slf4j.LoggerFactory;
 
 public class PrismaCloudServiceImpl implements PrismaCloudService {
 
-  Logger logger = LoggerFactory.getLogger(PrismaCloudServiceImpl.class);
+    Logger logger = LoggerFactory.getLogger(PrismaCloudServiceImpl.class);
 
-  /**
-   * This method returns the valid token using access_key and secret key.
-   */
+    /**
+     * This method returns the valid token using access_key and secret key.
+     */
     @Override
     public String getAccessToken(PrismaCloudConfiguration prismaCloudConfiguration)
-        throws IOException {
+            throws IOException {
         logger.info("Entered into PrismaCloudServiceImpl.getAccessToken");
         return generateToken(prismaCloudConfiguration);
     }
 
-  /**
-   * This method scan the zip file and returns JSON as string.
-   */
+    /**
+     * This method scan the zip file and returns JSON as string.
+     */
     @Override
     public String getScanDetails(PrismaCloudConfiguration prismaCloudConfiguration, String filePath)
-        throws IOException, InterruptedException {
+            throws IOException, InterruptedException {
         logger.info("Entered into PrismaCloudServiceImpl.getScanDetails");
         return getScanResult(prismaCloudConfiguration, filePath);
     }
@@ -69,7 +70,7 @@ public class PrismaCloudServiceImpl implements PrismaCloudService {
      */
     @SuppressFBWarnings({"RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"})
     private String generateToken(PrismaCloudConfiguration prismaCloudConfiguration)
-        throws ParseException, IOException {
+            throws ParseException, IOException {
         logger.info("Entered into PrismaCloudServiceImpl.generateToken");
 
         try (CloseableHttpClient client = HttpClients.createDefault();
@@ -78,7 +79,7 @@ public class PrismaCloudServiceImpl implements PrismaCloudService {
             if (statusCode == 200) {
                 String responseBody = EntityUtils.toString(authResponse.getEntity());
                 JsonReader reader = JSONUtils.parseJSONWitReader(responseBody);
-                JsonParser jsonParser =new JsonParser();
+                JsonParser jsonParser = new JsonParser();
                 JsonObject responseJsonObject = jsonParser.parse(reader).getAsJsonObject();
                 return responseJsonObject.get("token").getAsString();
             }
@@ -104,241 +105,247 @@ public class PrismaCloudServiceImpl implements PrismaCloudService {
     }
 
     /**
-     *Below method is used to get scan details from prisma clod API
+     * Below method is used to get scan details from prisma clod API
      */
     @SuppressFBWarnings({"RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"})
-  public String getScanResult(PrismaCloudConfiguration prismaCloudConfiguration, String filePath)
-      throws IOException, InterruptedException {
-    String responseBody = "";
-    String authToken = generateToken(prismaCloudConfiguration);
-    String processingStatus = "processing";
+    public String getScanResult(PrismaCloudConfiguration prismaCloudConfiguration, String filePath)
+            throws IOException, InterruptedException {
+        String responseBody = "";
+        String authToken = generateToken(prismaCloudConfiguration);
+        String processingStatus = "processing";
 
-    logger.info("Executing get Scan Result ....");
+        logger.info("Executing get Scan Result ....");
 
-    try (CloseableHttpClient client = HttpClients.createDefault(); CloseableHttpResponse scanUrlResponse = getPrismaCloudScanDetails(client, prismaCloudConfiguration, authToken)) {
-      if (scanUrlResponse.getStatusLine().getStatusCode() == 200 || scanUrlResponse.getStatusLine().getStatusCode() == 201) {
-        logger.info("Got the getPrismaCloudScanDetails");
-        responseBody = EntityUtils.toString(scanUrlResponse.getEntity());
-        logger.info("Scan Details Response " + responseBody.toString());
-        JsonReader reader = JSONUtils.parseJSONWitReader(responseBody);
-        JsonParser jsonParser = new JsonParser();
-        JsonObject jsonObject = jsonParser.parse(reader).getAsJsonObject();
-        JsonElement firstelement = jsonParser.parse(jsonObject.get("data").toString());
-        JsonElement secondelement = firstelement.getAsJsonObject().get("links");
-        String scanID = firstelement.getAsJsonObject().get("id").getAsString();
-        String s3LocationURL = secondelement.getAsJsonObject().get("url").toString();
-        logger.info("******** s3LocationURL ******* " + s3LocationURL.substring(1, s3LocationURL.length() - 1));
-        logger.info("******** Scan Id ********** " + scanID);
+        try (CloseableHttpClient client = HttpClients.createDefault(); CloseableHttpResponse scanUrlResponse = getPrismaCloudScanDetails(client, prismaCloudConfiguration, authToken)) {
+            if (scanUrlResponse.getStatusLine().getStatusCode() == 200 || scanUrlResponse.getStatusLine().getStatusCode() == 201) {
+                logger.info("Got the getPrismaCloudScanDetails");
+                responseBody = EntityUtils.toString(scanUrlResponse.getEntity());
+                logger.info("Scan Details Response " + responseBody.toString());
+                JsonReader reader = JSONUtils.parseJSONWitReader(responseBody);
+                JsonParser jsonParser = new JsonParser();
+                JsonObject jsonObject = jsonParser.parse(reader).getAsJsonObject();
+                JsonElement firstelement = jsonParser.parse(jsonObject.get("data").toString());
+                JsonElement secondelement = firstelement.getAsJsonObject().get("links");
+                String scanID = firstelement.getAsJsonObject().get("id").getAsString();
+                String s3LocationURL = secondelement.getAsJsonObject().get("url").toString();
+                logger.info("******** s3LocationURL ******* " + s3LocationURL.substring(1, s3LocationURL.length() - 1));
+                logger.info("******** Scan Id ********** " + scanID);
 
-        try (CloseableHttpResponse uploadFileResponse = uploadFileToS3(client, s3LocationURL.substring(1, s3LocationURL.length() - 1), filePath)) {
-          if (uploadFileResponse.getStatusLine().getStatusCode() == 200 || uploadFileResponse.getStatusLine().getStatusCode() == 201) {
-            logger.info("Uploaded the file to S3 bucket successfully");
-            try (CloseableHttpResponse triggerScanResponse = triggerScan(client, scanID, authToken, prismaCloudConfiguration)) {
-              if (triggerScanResponse.getStatusLine().getStatusCode() == 200) {
-                logger.info("Triggered the scan with scanID "+scanID);
-                while("processing".equals(processingStatus)){
-                  try (CloseableHttpResponse jobStatusResponse = getScanJobStatus(client, scanID, authToken, prismaCloudConfiguration)) {
-                    if (jobStatusResponse.getStatusLine().getStatusCode() == 200) {
-                      logger.info("GetScanJobStatus Executed with details : " + jobStatusResponse.getStatusLine().getStatusCode());
-                      logger.info("GetScanJobStatus Response : " + jobStatusResponse.getEntity().toString());
-                      Object obj = new JsonParser().parse(EntityUtils.toString(jobStatusResponse.getEntity(), StandardCharsets.UTF_8));
-                      JsonObject statusObject = (JsonObject) obj;
-                      if(statusObject.has("data")){
-                        logger.info("Status Object has data " );
-                        JsonObject attributes = statusObject.get("data").getAsJsonObject().get("attributes").getAsJsonObject();
-                        processingStatus = attributes.get("status").getAsString();
-                        logger.info("GetScan Job status Processing status : " + processingStatus);
-                        if (!processingStatus.equals("processing")){
-                          break;
+                try (CloseableHttpResponse uploadFileResponse = uploadFileToS3(client, s3LocationURL.substring(1, s3LocationURL.length() - 1), filePath)) {
+                    if (uploadFileResponse.getStatusLine().getStatusCode() == 200 || uploadFileResponse.getStatusLine().getStatusCode() == 201) {
+                        logger.info("Uploaded the file to S3 bucket successfully");
+                        try (CloseableHttpResponse triggerScanResponse = triggerScan(client, scanID, authToken, prismaCloudConfiguration)) {
+                            if (triggerScanResponse.getStatusLine().getStatusCode() == 200) {
+                                logger.info("Triggered the scan with scanID " + scanID);
+                                while ("processing".equals(processingStatus)) {
+                                    try (CloseableHttpResponse jobStatusResponse = getScanJobStatus(client, scanID, authToken, prismaCloudConfiguration)) {
+                                        if (jobStatusResponse.getStatusLine().getStatusCode() == 200) {
+                                            logger.info("GetScanJobStatus Executed with details : " + jobStatusResponse.getStatusLine().getStatusCode());
+                                            logger.info("GetScanJobStatus Response : " + jobStatusResponse.getEntity().toString());
+                                            Object obj = new JsonParser().parse(EntityUtils.toString(jobStatusResponse.getEntity(), StandardCharsets.UTF_8));
+                                            JsonObject statusObject = (JsonObject) obj;
+                                            if (statusObject.has("data")) {
+                                                logger.info("Status Object has data ");
+                                                JsonObject attributes = statusObject.get("data").getAsJsonObject().get("attributes").getAsJsonObject();
+                                                processingStatus = attributes.get("status").getAsString();
+                                                logger.info("GetScan Job status Processing status : " + processingStatus);
+                                                if (!processingStatus.equals("processing")) {
+                                                    break;
+                                                }
+                                            }
+                                            Thread.sleep(5000);
+                                        } else {
+                                            logger.info("Get job status failed");
+                                            return EntityUtils.toString(jobStatusResponse.getEntity(), StandardCharsets.UTF_8);
+                                        }
+                                    }
+                                }
+                                try (CloseableHttpResponse scanResultResponse = getScanResult(client, scanID, authToken, prismaCloudConfiguration)) {
+                                    if (scanResultResponse.getStatusLine().getStatusCode() == 200) {
+                                        logger.info("Getting Scan result========for scanID========" + scanID);
+                                        String result = EntityUtils.toString(scanResultResponse.getEntity());
+                                        logger.info("Scan Result is : " + result);
+                                        Object obj = new JsonParser().parse(result);
+                                        JsonObject jsonObjectParent = (JsonObject) obj;
+                                        jsonObjectParent.addProperty("processingStatus", processingStatus);
+                                        logger.info("JSON RESULT PARENT OBJECT : " + jsonObjectParent.toString());
+                                        return jsonObjectParent.toString();
+                                    }
+                                }
+                            } else {
+                                logger.info("Trigger Scan Failed");
+                                return EntityUtils.toString(triggerScanResponse.getEntity(), StandardCharsets.UTF_8);
+                            }
                         }
-                      }
-                      Thread.sleep(5000);
                     } else {
-                      logger.info("Get job status failed");
-                      return EntityUtils.toString(jobStatusResponse.getEntity(), StandardCharsets.UTF_8);
+                        logger.info("File upload failed");
+                        return EntityUtils.toString(uploadFileResponse.getEntity(), StandardCharsets.UTF_8);
                     }
-                  }
                 }
-                try ( CloseableHttpResponse scanResultResponse = getScanResult(client, scanID, authToken, prismaCloudConfiguration)) {
-                      if (scanResultResponse.getStatusLine().getStatusCode() == 200) {
-                        logger.info("Getting Scan result========for scanID========"+scanID);
-                        String result = EntityUtils.toString(scanResultResponse.getEntity());
-                        logger.info("Scan Result is : " + result) ;
-                        Object obj = new JsonParser().parse(result);
-                        JsonObject jsonObjectParent = (JsonObject) obj;
-                        jsonObjectParent.addProperty("processingStatus", processingStatus);
-                        logger.info("JSON RESULT PARENT OBJECT : " + jsonObjectParent.toString());
-                        return jsonObjectParent.toString();
-                      }
-                    }
-              } else {
-                logger.info("Trigger Scan Failed");
-                return EntityUtils.toString(triggerScanResponse.getEntity(), StandardCharsets.UTF_8);
-              }
+            } else {
+                logger.info("Problem while calling scan details");
+                return EntityUtils.toString(scanUrlResponse.getEntity(), StandardCharsets.UTF_8);
             }
-          } else {
-            logger.info("File upload failed");
-              return EntityUtils.toString(uploadFileResponse.getEntity(), StandardCharsets.UTF_8);
-          }
         }
-      } else {
-        logger.info("Problem while calling scan details");
-          return EntityUtils.toString(scanUrlResponse.getEntity(), StandardCharsets.UTF_8);
-      }
+        return StringUtils.EMPTY;
     }
-    return StringUtils.EMPTY;
-  }
 
     /**
      * Below method is used to get scan details from prisma cloud API
      */
-  private CloseableHttpResponse getPrismaCloudScanDetails(CloseableHttpClient client, PrismaCloudConfiguration prismaCloudConfiguration, String authToken) throws IOException {
-    logger.info("Entered into PrismaCloudServiceImpl.getScanResult");
-    StringEntity entity = getRequest(prismaCloudConfiguration);
-    logger.info("HTTP Post on : " + prismaCloudConfiguration.getScanUrl());
-    HttpPost httpPost = new HttpPost(prismaCloudConfiguration.getScanUrl());
-    httpPost.setHeader("Accept", "application/vnd.api+json");
-    httpPost.setHeader("Content-Type", "application/vnd.api+json");
-    httpPost.setHeader("x-redlock-auth", authToken);
-    httpPost.setEntity(entity);
-    return client.execute(httpPost);
-  }
+    private CloseableHttpResponse getPrismaCloudScanDetails(CloseableHttpClient client, PrismaCloudConfiguration prismaCloudConfiguration, String authToken) throws IOException {
+        logger.info("Entered into PrismaCloudServiceImpl.getScanResult");
+        StringEntity entity = getRequest(prismaCloudConfiguration);
+        logger.info("HTTP Post on : " + prismaCloudConfiguration.getScanUrl());
+        HttpPost httpPost = new HttpPost(prismaCloudConfiguration.getScanUrl());
+        httpPost.setHeader("Accept", "application/vnd.api+json");
+        httpPost.setHeader("Content-Type", "application/vnd.api+json");
+        httpPost.setHeader("x-redlock-auth", authToken);
+        httpPost.setEntity(entity);
+        return client.execute(httpPost);
+    }
 
     /**
      * Below methos is used to upload the file to given S3 Bucket
      */
-  private CloseableHttpResponse uploadFileToS3(CloseableHttpClient client, String s3LocationURL, String filePath) throws IOException {
-    logger.info("Entered into PrismaCloudServiceImpl.uploadFileToS3");
-    HttpPut httpPut = new HttpPut(s3LocationURL);
-    File fileToUpload = new File(filePath);
-    fileToUpload.setReadable(true);
-    httpPut.setEntity(new FileEntity(fileToUpload, ContentType.APPLICATION_OCTET_STREAM));
-    return client.execute(httpPut);
-  }
+    private CloseableHttpResponse uploadFileToS3(CloseableHttpClient client, String s3LocationURL, String filePath) throws IOException {
+        logger.info("Entered into PrismaCloudServiceImpl.uploadFileToS3");
+        HttpPut httpPut = new HttpPut(s3LocationURL);
+        File fileToUpload = new File(filePath);
+        fileToUpload.setReadable(true);
+        httpPut.setEntity(new FileEntity(fileToUpload, ContentType.APPLICATION_OCTET_STREAM));
+        return client.execute(httpPut);
+    }
 
     /**
      * Below method is used to start scan process for uploaded file.
      */
-  private CloseableHttpResponse triggerScan(CloseableHttpClient client, String scanId, String authToken, PrismaCloudConfiguration prismaCloudConfiguration) throws IOException {
-    logger.info("Entered into PrismaCloudServiceImpl.triggerScan");
-    JsonApiModelScanTrigger jsonApiModelScanTrigger = new JsonApiModelScanTrigger();
-    JsonApiModelScanTriggerData jsonApiModelScanTriggerData = new JsonApiModelScanTriggerData();
-    jsonApiModelScanTriggerData.setId(UUID.fromString(scanId));
+    private CloseableHttpResponse triggerScan(CloseableHttpClient client, String scanId, String authToken, PrismaCloudConfiguration prismaCloudConfiguration) throws IOException {
+        logger.info("Entered into PrismaCloudServiceImpl.triggerScan");
+        JsonApiModelScanTrigger jsonApiModelScanTrigger = new JsonApiModelScanTrigger();
+        JsonApiModelScanTriggerData jsonApiModelScanTriggerData = new JsonApiModelScanTriggerData();
+        jsonApiModelScanTriggerData.setId(UUID.fromString(scanId));
 
-    JsonApiModelScanTriggerDataAttributes jsonApiModelScanTriggerDataAttributes = new JsonApiModelScanTriggerDataAttributes();
+        JsonApiModelScanTriggerDataAttributes jsonApiModelScanTriggerDataAttributes = new JsonApiModelScanTriggerDataAttributes();
 
-    if (prismaCloudConfiguration.getTemplateType()
-        .equalsIgnoreCase("tf")) {
-      jsonApiModelScanTriggerDataAttributes.setTemplateType("tf");
-    } else if (prismaCloudConfiguration.getTemplateType()
-        .equalsIgnoreCase("cft")) {
-      jsonApiModelScanTriggerDataAttributes.setTemplateType("cft");
-    } else if (prismaCloudConfiguration.getTemplateType()
-        .equalsIgnoreCase("k8s")) {
-      jsonApiModelScanTriggerDataAttributes.setTemplateType("k8s");
-    }else {
-      jsonApiModelScanTriggerDataAttributes.setTemplateType("");
+        if (prismaCloudConfiguration.getTemplateType()
+                .equalsIgnoreCase("tf")) {
+            jsonApiModelScanTriggerDataAttributes.setTemplateType("tf");
+        } else if (prismaCloudConfiguration.getTemplateType()
+                .equalsIgnoreCase("cft")) {
+            jsonApiModelScanTriggerDataAttributes.setTemplateType("cft");
+        } else if (prismaCloudConfiguration.getTemplateType()
+                .equalsIgnoreCase("k8s")) {
+            jsonApiModelScanTriggerDataAttributes.setTemplateType("k8s");
+        } else {
+            jsonApiModelScanTriggerDataAttributes.setTemplateType("");
+        }
+
+        jsonApiModelScanTriggerDataAttributes.setTemplateVersion(prismaCloudConfiguration.getTemplateVersion());
+        IacTemplateParameters iacTemplateParameters = prismaCloudConfiguration.getIacTemplateParameters();
+        logger.info("IaCTemplate Parameter values : ");
+        if(iacTemplateParameters != null && iacTemplateParameters.getVariables() != null && iacTemplateParameters.getVariables().size() > 0) {
+            iacTemplateParameters.getVariables().forEach((k, v) -> logger.info("Key : " + k + ", Value : " + v));
+        }
+        if(iacTemplateParameters != null && iacTemplateParameters.getFiles() != null && iacTemplateParameters.getFiles().size() > 0) {
+            iacTemplateParameters.getFiles().forEach(k -> logger.info("Value : " + k));
+        }
+        logger.info("Setting IaC Template Parameters");
+        jsonApiModelScanTriggerDataAttributes.setTemplateParameters(iacTemplateParameters);
+        jsonApiModelScanTriggerDataAttributes.setTemplateVersion(prismaCloudConfiguration.getTemplateVersion());
+        jsonApiModelScanTriggerData.setAttributes(jsonApiModelScanTriggerDataAttributes);
+        jsonApiModelScanTrigger.setData(jsonApiModelScanTriggerData);
+
+        ObjectMapper mapper = new ObjectMapper();
+        StringEntity entity = new StringEntity(mapper.writeValueAsString(jsonApiModelScanTrigger));
+        HttpPost httpPost = new HttpPost(prismaCloudConfiguration.getScanUrl().concat("/").concat(scanId));
+        httpPost.setHeader("Accept", "application/vnd.api+json");
+        httpPost.setHeader("Content-Type", "application/vnd.api+json");
+        httpPost.setHeader("x-redlock-auth", authToken);
+        httpPost.setEntity(entity);
+        return client.execute(httpPost);
     }
-
-    jsonApiModelScanTriggerDataAttributes.setTemplateVersion(prismaCloudConfiguration.getTemplateVersion());
-    IacTemplateParameters iacTemplateParameters = new IacTemplateParameters();
-
-    logger.info("Setting IaC Template Parameters");
-    jsonApiModelScanTriggerDataAttributes.setTemplateParameters(iacTemplateParameters);
-    jsonApiModelScanTriggerDataAttributes.setTemplateVersion(prismaCloudConfiguration.getTemplateVersion());
-    jsonApiModelScanTriggerData.setAttributes(jsonApiModelScanTriggerDataAttributes);
-    jsonApiModelScanTrigger.setData(jsonApiModelScanTriggerData);
-
-    ObjectMapper mapper = new ObjectMapper();
-    StringEntity entity = new StringEntity(mapper.writeValueAsString(jsonApiModelScanTrigger));
-    HttpPost httpPost = new HttpPost(prismaCloudConfiguration.getScanUrl().concat("/").concat(scanId));
-    httpPost.setHeader("Accept", "application/vnd.api+json");
-    httpPost.setHeader("Content-Type", "application/vnd.api+json");
-    httpPost.setHeader("x-redlock-auth", authToken);
-    httpPost.setEntity(entity);
-    return client.execute(httpPost);
-  }
 
     /**
      * Below method is used to get scan status for uploaded file.
      */
-  private CloseableHttpResponse getScanJobStatus(CloseableHttpClient client, String scanId, String authToken, PrismaCloudConfiguration prismaCloudConfiguration) throws IOException {
-    logger.info("Entered into PrismaCloudServiceImpl.getScanJobStatus");
-    JsonObject requestBody = new JsonObject();
-    requestBody.addProperty("scanId", scanId);
+    private CloseableHttpResponse getScanJobStatus(CloseableHttpClient client, String scanId, String authToken, PrismaCloudConfiguration prismaCloudConfiguration) throws IOException {
+        logger.info("Entered into PrismaCloudServiceImpl.getScanJobStatus");
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("scanId", scanId);
 
-    HttpGet httpGet = new HttpGet(prismaCloudConfiguration.getScanUrl().concat("/").concat(scanId).concat("/status"));
-    httpGet.setHeader("Accept", "application/vnd.api+json");
-    httpGet.setHeader("Content-Type", "application/vnd.api+json");
-    httpGet.setHeader("x-redlock-auth", authToken);
-    return client.execute(httpGet);
-  }
+        HttpGet httpGet = new HttpGet(prismaCloudConfiguration.getScanUrl().concat("/").concat(scanId).concat("/status"));
+        httpGet.setHeader("Accept", "application/vnd.api+json");
+        httpGet.setHeader("Content-Type", "application/vnd.api+json");
+        httpGet.setHeader("x-redlock-auth", authToken);
+        return client.execute(httpGet);
+    }
 
     /**
      * Below method is used to get scan result of uploaded file.
      */
-  private CloseableHttpResponse getScanResult(CloseableHttpClient client, String scanId, String authToken, PrismaCloudConfiguration prismaCloudConfiguration) throws IOException {
-    logger.info("Entered into PrismaCloudServiceImpl.getScanResult");
-    JsonObject requestBody = new JsonObject();
-    requestBody.addProperty("scanId", scanId);
+    private CloseableHttpResponse getScanResult(CloseableHttpClient client, String scanId, String authToken, PrismaCloudConfiguration prismaCloudConfiguration) throws IOException {
+        logger.info("Entered into PrismaCloudServiceImpl.getScanResult");
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("scanId", scanId);
 
-    HttpGet httpGet = new HttpGet(prismaCloudConfiguration.getScanUrl().concat("/").concat(scanId).concat("/results"));
-    httpGet.setHeader("Accept", "application/vnd.api+json");
-    httpGet.setHeader("Content-Type", "application/vnd.api+json");
-    httpGet.setHeader("x-redlock-auth", authToken);
-    return client.execute(httpGet);
-  }
+        HttpGet httpGet = new HttpGet(prismaCloudConfiguration.getScanUrl().concat("/").concat(scanId).concat("/results"));
+        httpGet.setHeader("Accept", "application/vnd.api+json");
+        httpGet.setHeader("Content-Type", "application/vnd.api+json");
+        httpGet.setHeader("x-redlock-auth", authToken);
+        return client.execute(httpGet);
+    }
 
     /**
      * Below method is used to format/create request for API call
      */
-  private StringEntity getRequest(PrismaCloudConfiguration prismaCloudConfiguration) throws UnsupportedEncodingException, JsonProcessingException {
-    // Form json request
-    JsonApiModelAsyncScanRequest jsonApiModelAsyncScanRequest = new JsonApiModelAsyncScanRequest();
-    JsonApiModelAsyncScanRequestData jsonApiModelAsyncScanRequestData = new JsonApiModelAsyncScanRequestData();
-    JsonApiModelAsyncScanRequestDataAttributes jsonApiModelAsyncScanRequestDataAttributes = new JsonApiModelAsyncScanRequestDataAttributes();
+    private StringEntity getRequest(PrismaCloudConfiguration prismaCloudConfiguration) throws UnsupportedEncodingException, JsonProcessingException {
+        // Form json request
+        JsonApiModelAsyncScanRequest jsonApiModelAsyncScanRequest = new JsonApiModelAsyncScanRequest();
+        JsonApiModelAsyncScanRequestData jsonApiModelAsyncScanRequestData = new JsonApiModelAsyncScanRequestData();
+        JsonApiModelAsyncScanRequestDataAttributes jsonApiModelAsyncScanRequestDataAttributes = new JsonApiModelAsyncScanRequestDataAttributes();
 
-    //Setting tags
-    Map<String, String> iacScanTagsMap = new HashMap<>();
-    Map<String, String> configFileTags = prismaCloudConfiguration.getConfigFileTags();
-    if (configFileTags != null && !configFileTags.isEmpty()) {
-      iacScanTagsMap.putAll(configFileTags);
+        //Setting tags
+        Map<String, String> iacScanTagsMap = new HashMap<>();
+        Map<String, String> configFileTags = prismaCloudConfiguration.getConfigFileTags();
+        if (configFileTags != null && !configFileTags.isEmpty()) {
+            iacScanTagsMap.putAll(configFileTags);
+        }
+
+        String tagsString = prismaCloudConfiguration.getTags();
+        if (tagsString != null && !(tagsString = tagsString.trim()).isEmpty()) {
+            String[] tagsArray = tagsString.split(",");
+            for (String s : tagsArray) {
+                ConfigYmlTagsUtil.parseAndSetTag(s, iacScanTagsMap);
+            }
+        }
+        jsonApiModelAsyncScanRequestDataAttributes.setTags(iacScanTagsMap);
+
+        //setting scan type
+        jsonApiModelAsyncScanRequestData.setType("async-scan");
+        //Setting asset attribute
+        jsonApiModelAsyncScanRequestDataAttributes.setAssetName(prismaCloudConfiguration.getAssetName());
+        jsonApiModelAsyncScanRequestDataAttributes.setAssetType(prismaCloudConfiguration.getAssetType());
+
+        //Setting scanAttributes
+       // Map<String, String> jsonApiModelScanAttributes = new HashMap<>();
+        JsonApiModelScanAttributes jsonApiModelScanAttributes = new JsonApiModelScanAttributes();
+        jsonApiModelScanAttributes.put("buildNumber", prismaCloudConfiguration.getBuildNumber());
+        jsonApiModelScanAttributes.put("projectName", prismaCloudConfiguration.getJobName());
+        jsonApiModelAsyncScanRequestDataAttributes.setScanAttributes(jsonApiModelScanAttributes);
+
+        JsonApiModelFailureCriteria jsonApiModelFailureCriteria = new JsonApiModelFailureCriteria();
+        jsonApiModelFailureCriteria.setHigh(prismaCloudConfiguration.getHigh());
+        jsonApiModelFailureCriteria.setMedium(prismaCloudConfiguration.getMedium());
+        jsonApiModelFailureCriteria.setLow(prismaCloudConfiguration.getLow());
+        jsonApiModelFailureCriteria.setOperator(prismaCloudConfiguration.getOperator());
+        jsonApiModelAsyncScanRequestDataAttributes.setFailureCriteria(jsonApiModelFailureCriteria);
+
+        jsonApiModelAsyncScanRequestData.setAttributes(jsonApiModelAsyncScanRequestDataAttributes);
+        jsonApiModelAsyncScanRequest.setData(jsonApiModelAsyncScanRequestData);
+        ObjectMapper mapper = new ObjectMapper();
+        return new StringEntity(mapper.writeValueAsString(jsonApiModelAsyncScanRequest));
     }
-
-    String tagsString = prismaCloudConfiguration.getTags();
-    if (tagsString != null && !(tagsString = tagsString.trim()).isEmpty()) {
-      String[] tagsArray = tagsString.split(",");
-      for (String s : tagsArray) {
-        ConfigYmlTagsUtil.parseAndSetTag(s, iacScanTagsMap);
-      }
-    }
-    jsonApiModelAsyncScanRequestDataAttributes.setTags(iacScanTagsMap);
-
-    //setting scan type
-    jsonApiModelAsyncScanRequestData.setType("async-scan");
-    //Setting asset attribute
-    jsonApiModelAsyncScanRequestDataAttributes.setAssetName(prismaCloudConfiguration.getAssetName());
-    jsonApiModelAsyncScanRequestDataAttributes.setAssetType(prismaCloudConfiguration.getAssetType());
-
-    //Setting scanAttributes
-    Map<String, String> jsonApiModelScanAttributes = new HashMap<>();
-    jsonApiModelScanAttributes.put("buildNumber", prismaCloudConfiguration.getBuildNumber());
-    jsonApiModelScanAttributes.put("projectName", prismaCloudConfiguration.getJobName());
-    jsonApiModelAsyncScanRequestDataAttributes.setScanAttributes(jsonApiModelScanAttributes);
-
-    JsonApiModelFailureCriteria jsonApiModelFailureCriteria = new JsonApiModelFailureCriteria();
-    jsonApiModelFailureCriteria.setHigh(prismaCloudConfiguration.getHigh());
-    jsonApiModelFailureCriteria.setMedium(prismaCloudConfiguration.getMedium());
-    jsonApiModelFailureCriteria.setLow(prismaCloudConfiguration.getLow());
-    jsonApiModelFailureCriteria.setOperator(prismaCloudConfiguration.getOperator());
-    jsonApiModelAsyncScanRequestDataAttributes.setFailureCriteria(jsonApiModelFailureCriteria);
-
-    jsonApiModelAsyncScanRequestData.setAttributes(jsonApiModelAsyncScanRequestDataAttributes);
-    jsonApiModelAsyncScanRequest.setData(jsonApiModelAsyncScanRequestData);
-    ObjectMapper mapper = new ObjectMapper();
-    return new StringEntity(mapper.writeValueAsString(jsonApiModelAsyncScanRequest));
-  }
-
 
 
 }
