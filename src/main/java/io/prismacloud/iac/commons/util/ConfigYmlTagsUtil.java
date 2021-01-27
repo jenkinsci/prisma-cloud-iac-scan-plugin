@@ -71,11 +71,8 @@ public class ConfigYmlTagsUtil {
             ObjectNode config = YAML.readValue(configFile, ObjectNode.class);
             if (config.hasNonNull("template_parameters")) {
                 logger.println("Prisma Cloud IaC Scan: Processing Template Parameters .....");
-               // ObjectMapper mapper = new ObjectMapper(new JsonFactory());
 
                 TemplateParametersModel templateParametersModel = YAML.convertValue(config.get("template_parameters"), TemplateParametersModel.class);
-
-               // TemplateParametersModel templateParametersModel = mapper.readValue(config.get("template_parameters").toString(), TemplateParametersModel.class);
 
                 if (templateParametersModel != null) {
                     if (templateParametersModel.getVariables() != null && templateParametersModel.getVariables().size() > 0) {
