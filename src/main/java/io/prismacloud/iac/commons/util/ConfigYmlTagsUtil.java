@@ -1,5 +1,8 @@
 package io.prismacloud.iac.commons.util;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -59,62 +62,39 @@ public class ConfigYmlTagsUtil {
         try {
             ObjectNode config = YAML.readValue(configFile, ObjectNode.class);
             if (config.hasNonNull("template_parameters")) {
-                JsonNode templateParams = config.get("template_parameters");
-                if (templateParams.hasNonNull("variables")) {
-                    JsonNode variablesNode = templateParams.get("variables");
-                    if (!variablesNode.isEmpty()) {
-                        Map<String, String> variablesMap = new LinkedHashMap<>();
-                        if (variablesNode.isObject()) {
-                            Iterator<Map.Entry<String, JsonNode>> itr = variablesNode.fields();
-                            while (itr.hasNext()) {
-                                Map.Entry<String, JsonNode> e = itr.next();
-                                String name = e.getKey();
-                                if (name != null && !(name = name.trim()).isEmpty()) {
-                                    variablesMap.put(e.getKey(), e.getValue().asText(EMPTY));
-                                }
-                            }
-                        } else if (variablesNode.isArray()) {
-                            Iterator<JsonNode> itr = variablesNode.elements();
-                            while (itr.hasNext()) {
-                                JsonNode e = itr.next();
-                                parseAndSetTag(e.asText(EMPTY), variablesMap);
-                            }
-                        } else {
-                            parseAndSetTag(variablesNode.asText(EMPTY), variablesMap);
-                        }
-                        logger.println("Prisma Cloud IaC Scan: Printing template parameters variables");
-                        if (variablesMap.size() > 0) {
-                            variablesMap.forEach((k, v) -> logger.println("Key : " + k + ", Value : " + v));
-                        }
+                logger.println("Prisma Cloud IaC Scan: Processing Template Parameters .....");
+                ObjectMapper mapper = new ObjectMapper(new JsonFactory());
 
-                        iacTemplateParameters.setVariables(variablesMap);
-                    }
-                }
+                TemplateParametersModel templateParametersModel = mapper.readValue(config.get("template_parameters").toString(), TemplateParametersModel.class);
 
-                if (templateParams.hasNonNull("variable_files")) {
-                    JsonNode variableFilesNode = templateParams.get("variable_files");
-                    if (!variableFilesNode.isEmpty()) {
-                        List<String> filesList = new ArrayList<>();
-                        if (variableFilesNode.isArray()) {
-                            Iterator<JsonNode> itr = variableFilesNode.elements();
-                            while (itr.hasNext()) {
-                                JsonNode e = itr.next();
-                                filesList.add(e.toString());
-                            }
-                        }
-                        logger.println("Prisma Cloud IaC Scan: Printing template parameters variable files");
-                        if (filesList.size() > 0) {
-                            filesList.forEach(v -> logger.println(v));
-                        }
-                        iacTemplateParameters.setFiles(filesList);
+                if (templateParametersModel != null) {
+                    if (templateParametersModel.getVariables() != null && templateParametersModel.getVariables().size() > 0) {
+                        iacTemplateParameters.setVariables(templateParametersModel.getVariables());
                     }
+                    if (templateParametersModel.getVariableFiles() != null && templateParametersModel.getVariableFiles().size() > 0) {
+                        iacTemplateParameters.setVariableFiles(templateParametersModel.getVariableFiles());
+                    }
+                    if (templateParametersModel.getFiles() != null && templateParametersModel.getFiles().size() > 0) {
+                        iacTemplateParameters.setFiles(templateParametersModel.getFiles());
+                    }
+                    if (templateParametersModel.getPolicyIdFilters() != null && templateParametersModel.getPolicyIdFilters().size() > 0) {
+                        iacTemplateParameters.setPolicyIdFilters(templateParametersModel.getPolicyIdFilters());
+                    }
+                    if (templateParametersModel.getFolders() != null && templateParametersModel.getFolders().size() > 0) {
+                        iacTemplateParameters.setFolders(templateParametersModel.getFolders());
+                    }
+                    if (templateParametersModel.getScanPlanFilesOnly() != null) {
+                        iacTemplateParameters.setScanPlanFilesOnly(templateParametersModel.getScanPlanFilesOnly());
+                    }
+
                 }
             }
-        } catch (RuntimeException e) {
+        } catch (JsonMappingException e) {
+            logger.println("Prisma Cloud IaC Scan: Failed to read template parameters variables from config file '" + configFile.getAbsolutePath() + "': " + e.getMessage());
+        } catch (JsonProcessingException e) {
             logger.println("Prisma Cloud IaC Scan: Failed to read template parameters variables from config file '" + configFile.getAbsolutePath() + "': " + e.getMessage());
         } catch (Exception e) {
             logger.println("Prisma Cloud IaC Scan: Failed to read template parameters variables from config file '" + configFile.getAbsolutePath() + "': " + e.getMessage());
-
         }
         return iacTemplateParameters;
     }

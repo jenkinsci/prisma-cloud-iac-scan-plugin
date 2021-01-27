@@ -258,6 +258,7 @@ public class PrismaCloudServiceImpl implements PrismaCloudService {
 
         ObjectMapper mapper = new ObjectMapper();
         StringEntity entity = new StringEntity(mapper.writeValueAsString(jsonApiModelScanTrigger));
+        logger.info("Trigger Scan (Entity JSON Object ) : " + mapper.writeValueAsString(jsonApiModelScanTrigger));
         HttpPost httpPost = new HttpPost(prismaCloudConfiguration.getScanUrl().concat("/").concat(scanId));
         httpPost.setHeader("Accept", "application/vnd.api+json");
         httpPost.setHeader("Content-Type", "application/vnd.api+json");
