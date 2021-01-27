@@ -150,12 +150,7 @@
                                     <j:forEach indexVar="index" var="scanResult" items="${it.scanResults}">
                                         <tr>
                                              <td class="px-6 py-4 border-b border-black-200" style="text-align: left">
-
-
                                                        <div class="text-sm leading-4 font-medium text-black-700"  style="text-align: left">${index + 1}</div>
-
-
-
                                              </td>
 
                                             <td class="px-6 py-4 border-b border-black-200" style="text-align: left;">
