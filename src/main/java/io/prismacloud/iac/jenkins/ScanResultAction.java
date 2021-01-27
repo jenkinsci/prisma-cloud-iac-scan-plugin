@@ -41,160 +41,148 @@ public class ScanResultAction implements RunAction2 {
     public ScanResultAction(String scanResultJsonFile, boolean buildStatus,
                             Map<String, String> map, boolean apiResponseError, TaskListener listener) {
 
-        if (null != listener) {
+        if (listener != null) {
             listener.getLogger().println("Prisma Cloud IaC Scan: Executing Scan Result Action ....");
         }
 
-        //Read main Response
-        JsonReader reader = JSONUtils.parseJSONWitReader(scanResultJsonFile);
-        JsonObject jsonObjectParent = JsonParser.parseReader(reader).getAsJsonObject();
-        errorResponseList = new ArrayList<>();
+        if (scanResultJsonFile != null && !scanResultJsonFile.isEmpty()) {
+            //Read main Response
+            JsonReader reader = JSONUtils.parseJSONWitReader(scanResultJsonFile);
+            JsonObject jsonObjectParent = JsonParser.parseReader(reader).getAsJsonObject();
+            errorResponseList = new ArrayList<>();
 
-        //Check Response error
-        JsonElement jsonError = jsonObjectParent.get("errors");
-        JsonElement jsonErr = jsonObjectParent.get("error");
+            //Check Response error
+            JsonElement jsonError = jsonObjectParent.get("errors");
+            JsonElement jsonErr = jsonObjectParent.get("error");
 
-        if (jsonError != null) {
-            JsonArray jsonErrorArray = jsonError.getAsJsonArray();
-            errorResponseList = getErrorResponse(jsonErrorArray);
-        } else if (jsonErr != null) {
-            ErrorDetail prismaError = new ErrorDetail();
-            prismaError.setApiErrorStatus(jsonErr.toString().replace("\"", ""));
-            String errorDetailsString = jsonObjectParent.get("message").toString().replace("\"", "");
-            List<String> apiErrorMessageList = new ArrayList<>();
-            if (errorDetailsString != null && !errorDetailsString.equalsIgnoreCase("")) {
-                apiErrorMessageList = Arrays.asList(errorDetailsString.split(";"));
-            }
-            prismaError.setApiErrorMessageList(apiErrorMessageList);
-            errorResponseList.add(prismaError);
-        } else {
-            JsonElement jsonElementParent = jsonObjectParent.get("meta");
-            JsonObject jsonObjectChild = jsonElementParent.getAsJsonObject();
-
-            //Get Error details
-            if (jsonObjectChild.has("errorDetails")) {
-                JsonElement jsonElementError = jsonObjectChild.get("errorDetails");
-                JsonArray jsonArray = jsonElementError.getAsJsonArray();
-                errorResponseList = getErrorResponse(jsonArray);
-            }
-        }
-
-
-        this.apiError = apiResponseError;
-
-        JsonReader scanreader = JSONUtils.parseJSONWitReader(scanResultJsonFile);
-        JsonObject jsonObject = JsonParser.parseReader(scanreader).getAsJsonObject();
-
-        if (jsonObject.has("meta")) {
-            JsonObject summery = jsonObject.get("meta").getAsJsonObject();
-            JsonElement summeryElement = summery.get("matchedPoliciesSummary");
-            ScanResult scanResult = new ScanResult();
-            JsonObject matchedPoliciesSummery = summeryElement.getAsJsonObject();
-            high = Integer.parseInt(matchedPoliciesSummery.get("high").toString());
-            medium = Integer.parseInt(matchedPoliciesSummery.get("medium").toString());
-            low = Integer.parseInt(matchedPoliciesSummery.get("low").toString());
-
-
-            total = (int) (high + medium + low);
-
-            highPercentage = ((high / total) * 100) + "%";
-            mediumPercentage = ((medium / total) * 100) + "%";
-            lowPercentage = ((low / total) * 100) + "%";
-
-            scanResult.setHighSeverity(high);
-            scanResult.setHighPercentage(highPercentage);
-            scanResult.setMediumSeverity(medium);
-            scanResult.setMediumPercentage(mediumPercentage);
-            scanResult.setLowSeverity(low);
-            scanResult.setLowPercentage(lowPercentage);
-            scanResult.setTotalIssues(total);
-
-
-            /*if (jsonObjectParent.has("processingStatus")) {
-                if (jsonObjectParent.get("processingStatus") != null) {
-                    String processingStatusResult = jsonObjectParent.get("processingStatus").toString().replace("\"", "");
-                    //Remove double quotes if exist
-                    if (processingStatusResult.equalsIgnoreCase("passed")) {
-                        status = "Passed";
-                    } else {
-                        status = "Failed";
-                    }
-
-                    listener.getLogger().println("Prisma Cloud IaC Scan: Final status from IaC Scan " + status);
-
+            if (jsonError != null) {
+                JsonArray jsonErrorArray = jsonError.getAsJsonArray();
+                errorResponseList = getErrorResponse(jsonErrorArray);
+            } else if (jsonErr != null) {
+                ErrorDetail prismaError = new ErrorDetail();
+                prismaError.setApiErrorStatus(jsonErr.toString().replace("\"", ""));
+                String errorDetailsString = jsonObjectParent.get("message").toString().replace("\"", "");
+                List<String> apiErrorMessageList = new ArrayList<>();
+                if (errorDetailsString != null && !errorDetailsString.equalsIgnoreCase("")) {
+                    apiErrorMessageList = Arrays.asList(errorDetailsString.split(";"));
                 }
-            }*/
-
-
-            // set build status
-            if (buildStatus) {
-                status = "Passed";
+                prismaError.setApiErrorMessageList(apiErrorMessageList);
+                errorResponseList.add(prismaError);
             } else {
-                status = "Failed";
-            }
+                JsonElement jsonElementParent = jsonObjectParent.get("meta");
+                JsonObject jsonObjectChild = jsonElementParent.getAsJsonObject();
 
-            if (null != listener) {
-                listener.getLogger().println("Prisma Cloud IaC Scan: Final status from IaC Scan " + status);
-            }
-            severityMap = map;
-            severityMap.put("Status", status);
-
-            JsonArray rulesMatchedJsonArray = jsonObject.get("data").getAsJsonArray();
-
-            if (jsonObject.has("data")) {
-                scanResults = new ArrayList<>();
-                List<Issue> highSeverityIssueList = new ArrayList<>();
-                List<Issue> mediumSeverityIssueList = new ArrayList<>();
-                List<Issue> lowSeverityIssueList = new ArrayList<>();
-
-                for (int index = 0; index < rulesMatchedJsonArray.size(); index++) {
-
-                    JsonObject jsonAttributes =
-                            rulesMatchedJsonArray.get(index).getAsJsonObject().get("attributes")
-                                    .getAsJsonObject();
-
-                    String severity = jsonAttributes.get("severity").getAsString();
-                    String name = jsonAttributes.get("name").getAsString();
-                    String file = getfileNames(jsonAttributes.get("files").getAsJsonArray());
-                    List<String> filesList = new ArrayList<>();
-                    if (file != null && !file.equalsIgnoreCase("")) {
-                        filesList = Arrays.asList(file.split(","));
-                    }
-                    String rule = jsonAttributes.get("rule").getAsString();
-                    String desc = jsonAttributes.get("desc").getAsString();
-                    String docUrl = "";
-                    if (jsonAttributes.has("docUrl")) {
-                        docUrl = jsonAttributes.get("docUrl").getAsString();
-                    }
-
-                    Issue issue = new Issue();
-                    issue.setSeverity(severity);
-                    issue.setName(name);
-                    issue.setFiles(filesList);
-                    issue.setRule(rule);
-                    issue.setDesc(desc);
-                    issue.setDocUrl(docUrl);
-
-                    if (severity.equalsIgnoreCase("high")) {
-                        highSeverityIssueList.add(issue);
-                    } else if (severity.equalsIgnoreCase("medium")) {
-                        mediumSeverityIssueList.add(issue);
-                    } else if (severity.equalsIgnoreCase("low")) {
-                        lowSeverityIssueList.add(issue);
-                    }
+                //Get Error details
+                if (jsonObjectChild.has("errorDetails")) {
+                    JsonElement jsonElementError = jsonObjectChild.get("errorDetails");
+                    JsonArray jsonArray = jsonElementError.getAsJsonArray();
+                    errorResponseList = getErrorResponse(jsonArray);
                 }
-                scanResults.addAll(highSeverityIssueList);
-                scanResults.addAll(mediumSeverityIssueList);
-                scanResults.addAll(lowSeverityIssueList);
+            }
+
+
+            this.apiError = apiResponseError;
+
+            JsonReader scanreader = JSONUtils.parseJSONWitReader(scanResultJsonFile);
+            JsonObject jsonObject = JsonParser.parseReader(scanreader).getAsJsonObject();
+
+            if (jsonObject.has("meta")) {
+                JsonObject summary = jsonObject.get("meta").getAsJsonObject();
+                JsonElement summaryElement = summary.get("matchedPoliciesSummary");
+                ScanResult scanResult = new ScanResult();
+                JsonObject matchedPoliciesSummery = summaryElement.getAsJsonObject();
+                high = Integer.parseInt(matchedPoliciesSummery.get("high").toString());
+                medium = Integer.parseInt(matchedPoliciesSummery.get("medium").toString());
+                low = Integer.parseInt(matchedPoliciesSummery.get("low").toString());
+
+
+                total = (int) (high + medium + low);
+
+                highPercentage = ((high / total) * 100) + "%";
+                mediumPercentage = ((medium / total) * 100) + "%";
+                lowPercentage = ((low / total) * 100) + "%";
+
+                scanResult.setHighSeverity(high);
+                scanResult.setHighPercentage(highPercentage);
+                scanResult.setMediumSeverity(medium);
+                scanResult.setMediumPercentage(mediumPercentage);
+                scanResult.setLowSeverity(low);
+                scanResult.setLowPercentage(lowPercentage);
+                scanResult.setTotalIssues(total);
+
+
+                // set build status
+                if (buildStatus) {
+                    status = "Passed";
+                } else {
+                    status = "Failed";
+                }
 
                 if (null != listener) {
-                    listener.getLogger().println("Prisma Cloud IaC Scan: Scan Results size : " + scanResults.size());
+                    listener.getLogger().println("Prisma Cloud IaC Scan: Final status from IaC Scan :: " + status);
                 }
-            } else {
-                this.statusMessage = "No Issues found in Prisma Cloud IAC Scan.";
+                severityMap = map;
+                severityMap.put("Status", status);
+
+                JsonArray rulesMatchedJsonArray = jsonObject.get("data").getAsJsonArray();
+
+                if (jsonObject.has("data")) {
+                    scanResults = new ArrayList<>();
+                    List<Issue> highSeverityIssueList = new ArrayList<>();
+                    List<Issue> mediumSeverityIssueList = new ArrayList<>();
+                    List<Issue> lowSeverityIssueList = new ArrayList<>();
+
+                    for (int index = 0; index < rulesMatchedJsonArray.size(); index++) {
+
+                        JsonObject jsonAttributes =
+                                rulesMatchedJsonArray.get(index).getAsJsonObject().get("attributes")
+                                        .getAsJsonObject();
+
+                        String severity = jsonAttributes.get("severity").getAsString();
+                        String name = jsonAttributes.get("name").getAsString();
+                        String file = getfileNames(jsonAttributes.get("files").getAsJsonArray());
+                        List<String> filesList = new ArrayList<>();
+                        if (file != null && !file.equalsIgnoreCase("")) {
+                            filesList = Arrays.asList(file.split(","));
+                        }
+                        String rule = jsonAttributes.get("rule").getAsString();
+                        String desc = jsonAttributes.get("desc").getAsString();
+                        String docUrl = "";
+                        if (jsonAttributes.has("docUrl")) {
+                            docUrl = jsonAttributes.get("docUrl").getAsString();
+                        }
+
+                        Issue issue = new Issue();
+                        issue.setSeverity(severity);
+                        issue.setName(name);
+                        issue.setFiles(filesList);
+                        issue.setRule(rule);
+                        issue.setDesc(desc);
+                        issue.setDocUrl(docUrl);
+
+                        if (severity.equalsIgnoreCase("high")) {
+                            highSeverityIssueList.add(issue);
+                        } else if (severity.equalsIgnoreCase("medium")) {
+                            mediumSeverityIssueList.add(issue);
+                        } else if (severity.equalsIgnoreCase("low")) {
+                            lowSeverityIssueList.add(issue);
+                        }
+                    }
+                    scanResults.addAll(highSeverityIssueList);
+                    scanResults.addAll(mediumSeverityIssueList);
+                    scanResults.addAll(lowSeverityIssueList);
+
+                    if (null != listener) {
+                        listener.getLogger().println("Prisma Cloud IaC Scan: Scan Results size : " + scanResults.size());
+                    }
+                } else {
+                    this.statusMessage = "No Issues found in Prisma Cloud IAC Scan.";
+                }
             }
+
+        } else {
+            listener.getLogger().println("Prisma Cloud IaC Scan: scanResultJsonFile is empty or null");
         }
-        // }
     }
 
 

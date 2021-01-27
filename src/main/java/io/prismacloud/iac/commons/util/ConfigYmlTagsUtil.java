@@ -56,6 +56,14 @@ public class ConfigYmlTagsUtil {
     }
 
 
+    /**
+     * This method reads config.yml file and extracts Template Parameters Information
+     * Set extracted values to IaCTemplateParameters object
+     * @param logger
+     * @param configFile
+     * @return IacTemplateParameters
+     */
+
     public static IacTemplateParameters readTemplateParams(PrintStream logger, File configFile) {
         logger.println("Prisma Cloud IaC Scan: Inside readTemplateParams method");
         IacTemplateParameters iacTemplateParameters = new IacTemplateParameters();
@@ -87,6 +95,8 @@ public class ConfigYmlTagsUtil {
                         iacTemplateParameters.setScanPlanFilesOnly(templateParametersModel.getScanPlanFilesOnly());
                     }
 
+                } else {
+                    logger.println("Prisma Cloud IaC Scan: Unable to parse config.yml for template_parameters object");
                 }
             }
         } catch (JsonMappingException e) {

@@ -150,7 +150,7 @@ public class TemplateScanBuilder extends Builder implements SimpleBuildStep {
 
         File destinationFile = new File(sourceFolder + "/iacscan.zip");
         destinationFile.setWritable(true);
-        listener.getLogger().println("Prisma Cloud IaC Scan: Destination Folder : " + destinationFile);
+        listener.getLogger().println("Prisma Cloud IaC Scan: Destination File : " + destinationFile);
 
         String jobName = build.getDisplayName();
         //Create zip file
@@ -170,30 +170,30 @@ public class TemplateScanBuilder extends Builder implements SimpleBuildStep {
             configFileTags = Collections.emptyMap();
         }
 
+        //Initialize Template Parameters
         IacTemplateParameters iacTemplateParameters = initializeIacTemplateParameters(sourceFolder, listener);
 
-        listener.getLogger().println("Prisma Cloud IaC Scan: Config YML files check completed");
+        listener.getLogger().println("Prisma Cloud IaC Scan: Config YML files processing completed");
 
         boolean buildStatus = false;
+
         listener.getLogger().println("Prisma Cloud IaC Scan: ------------------------- Prisma Cloud IAC----------------------");
 
         if (isZipFileCreated) {
             listener.getLogger().println("Prisma Cloud IaC Scan: Calling Prisma Cloud IaC Scan API " + destinationFile.getAbsolutePath());
             String result = callPrismaCloudAsyncEndPoint(destinationFile.getAbsolutePath(), listener, workspace.getRemote(), jobName, configFileTags, iacTemplateParameters);
             buildStatus = checkSeverity(result, listener);
-            listener.getLogger().println("Prisma Cloud IaC Scan: Build Status value before processing results : " + buildStatus);
             if (apiResponseError) {
-                listener.getLogger().println("Prisma Cloud IaC Scan: Api Error detected.....");
+                listener.getLogger().println("Prisma Cloud IaC Scan: Partial error detected.....");
             } else {
-                listener.getLogger().println("Prisma Cloud IaC Scan: No Api Error detected....");
+                listener.getLogger().println("Prisma Cloud IaC Scan: Partial error not detected....");
             }
             build.addAction(new ScanResultAction(result, buildStatus,
                     getSeverityMap(failureCriteriaHigh, failureCriteriaMedium, failureCriteriaLow, failureCriteriaOperator), apiResponseError, listener));
         } else {
-            throw new AbortException("Prisma Cloud IaC Scan: Zipfile Failed to create");
+            throw new AbortException("Prisma Cloud IaC Scan: Failed to create Zipfile");
         }
 
-        listener.getLogger().println("Prisma Cloud IaC Scan: Build status value after processing results : " + buildStatus);
         //Report Build Complete, now show build status
         if (buildStatus == false) {
             throw new AbortException("Prisma Cloud IaC Scan: Build Failed");
@@ -376,7 +376,7 @@ public class TemplateScanBuilder extends Builder implements SimpleBuildStep {
             if (jsonObjectParent.get("processingStatus") != null) {
                 String status = jsonObjectParent.get("processingStatus").toString().replace("\"", "");
                 //Remove double quotes if exist
-                listener.getLogger().println("Prisma Cloud IaC Scan: Status " + status);
+                listener.getLogger().println("Prisma Cloud IaC Scan: Build Status ::: " + status);
 
                 if(status.equalsIgnoreCase("failed")) {
                     processingStatus = false;
