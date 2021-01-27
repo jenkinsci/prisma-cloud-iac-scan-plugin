@@ -177,7 +177,7 @@
                                             </td>
 
                                             <td class="px-6 py-4 whitespace-no-wrap border-b border-black-200" style="text-align: left">
-                                                <span class="text-sm leading-4 text-black-700" style="text-align: left"> <a href="${scanResult.docUrl}"> ${scanResult.name} </a> </span>
+                                                <span class="text-sm leading-4 text-black-700" style="text-align: left"> <a href="${scanResult.docUrl}" target="_blank" rel="noopener noreferrer"> ${scanResult.name} </a> </span>
                                             </td>
 
                                             <td class="px-6 py-4 whitespace-no-wrap border-b border-black-200" style="text-align: left;">

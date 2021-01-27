@@ -386,7 +386,7 @@ public class TemplateScanBuilder extends Builder implements SimpleBuildStep {
         } catch (Exception exception) {
             listener.getLogger().println("Prisma Cloud IaC Scan: API Response " + result);
             apiResponseError = true;
-            return false;
+            return true;
         }
     }
 
