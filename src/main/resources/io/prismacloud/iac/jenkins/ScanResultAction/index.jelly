@@ -113,7 +113,14 @@
                 <j:if test="${size(it.scanResults) > 0 }">
                     <div class="-my-2 py-2 overflow-x-auto sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8" style="text-align: left;">
                         <p><strong>Security Issues from Prisma Cloud IaC Scan</strong></p>
-                        <p><strong>${it.total} Issues</strong></p>
+
+                         <j:if test="${size(it.scanResults) > 1 }">
+                         <p><strong>${it.total} Issues</strong></p>
+                         </j:if>
+                         <j:if test="${size(it.scanResults) == 1 }">
+                         <p><strong>${it.total} Issue</strong></p>
+                         </j:if>
+
                         <div class="align-middle inline-block min-w-full shadow overflow-hidden sm:rounded-lg border-b border-black-200">
                             <table class="pane bigtable stripped-odd" style="max-width :100%; white-space: nowrap;">
                                 <thead>
@@ -201,7 +208,13 @@
                 <j:if test="${size(it.errorResponseList) > 0 }">
                                     <div class="-my-2 py-2 overflow-x-auto sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8" style="text-align: left;">
                                        <p><strong> Errors from Prisma Cloud IaC Scan</strong></p>
+                                       <j:if test="${size(it.errorResponseList) > 1 }">
                                        <p><strong>${size(it.errorResponseList)} Errors</strong></p>
+                                       </j:if>
+                                        <j:if test="${size(it.errorResponseList) == 1 }">
+                                        <p><strong>${size(it.errorResponseList)} Error</strong></p>
+                                        </j:if>
+
                                     </div>
                                     <div class="align-middle inline-block min-w-full shadow overflow-hidden sm:rounded-lg border-b border-black-200">
                                       <table class="pane bigtable stripped-odd">
