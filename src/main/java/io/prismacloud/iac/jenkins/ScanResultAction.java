@@ -73,7 +73,8 @@ public class ScanResultAction implements RunAction2 {
                 prismaError.setApiErrorStatus(jsonErr.toString().replace("\"", ""));
                 String errorDetailsString = jsonObjectParent.get("message").toString().replace("\"", "");
                 errorDetailsString = errorDetailsString.replaceAll(replaceParentName, "");
-                errorDetailsString = errorDetailsString.replaceAll("\\\\n", "");
+                errorDetailsString = errorDetailsString.replaceFirst("\\\\n", ", ");
+                errorDetailsString = errorDetailsString.replaceAll("\\\\n", " ");
                 errorDetailsString = errorDetailsString.replaceAll("\\\\", "");
                 List<String> apiErrorMessageList = new ArrayList<>();
                 if (errorDetailsString != null && !errorDetailsString.equalsIgnoreCase("")) {
@@ -214,7 +215,8 @@ public class ScanResultAction implements RunAction2 {
 
             String errorDetailsString = detail.toString().substring(1, detail.toString().length() - 1);
             errorDetailsString = errorDetailsString.replaceAll(replaceParentName, "");
-            errorDetailsString = errorDetailsString.replaceAll("\\\\n", "");
+            errorDetailsString = errorDetailsString.replaceFirst("\\\\n", ", ");
+            errorDetailsString = errorDetailsString.replaceAll("\\\\n", " ");
             errorDetailsString = errorDetailsString.replaceAll("\\\\", "");
             List<String> apiErrorMessageList = new ArrayList<>();
             if (errorDetailsString != null && !errorDetailsString.equalsIgnoreCase("")) {
