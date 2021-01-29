@@ -41,7 +41,7 @@ public class ScanResultActionTest {
   public void testscanResultActionStatus() {
     boolean buildStatusFail = true;
     Mockito.doReturn(printStream).when(listener).getLogger();
-    ScanResultAction result = new ScanResultAction(scanResultPassed, buildStatusFail, severityMap, false, listener);
+    ScanResultAction result = new ScanResultAction(scanResultPassed, buildStatusFail, severityMap, false, listener, "");
     Assert.assertNotNull(result);
     Assert.assertTrue(result.getStatus().equals("Passed"));
   }
@@ -50,7 +50,7 @@ public class ScanResultActionTest {
   public void testScanResultActionStatusFailed() {
     boolean buildStatusFail = false;
     Mockito.doReturn(printStream).when(listener).getLogger();
-    ScanResultAction result = new ScanResultAction(scanResultFailed, buildStatusFail, severityMap, false, listener);
+    ScanResultAction result = new ScanResultAction(scanResultFailed, buildStatusFail, severityMap, false, listener, "");
     Assert.assertNotNull(result);
     Assert.assertTrue(result.getStatus().equals("Failed"));
   }
@@ -59,7 +59,7 @@ public class ScanResultActionTest {
   public void testscanResultActionTotalVulnerabilities() {
     boolean buildStatusFail = false;
     Mockito.doReturn(printStream).when(listener).getLogger();
-    ScanResultAction result = new ScanResultAction(scanResultPassed, buildStatusFail, severityMap, false, listener);
+    ScanResultAction result = new ScanResultAction(scanResultPassed, buildStatusFail, severityMap, false, listener, "");
     Assert.assertNotNull(result);
     Assert.assertEquals(result.getTotal(), 22);
   }
@@ -68,7 +68,7 @@ public class ScanResultActionTest {
   public void testscanResultActionSeverityLimitMap(){
     boolean buildStatusFail = false;
     Mockito.doReturn(printStream).when(listener).getLogger();
-    ScanResultAction result = new ScanResultAction(scanResultPassed, buildStatusFail, severityMap, false, listener);
+    ScanResultAction result = new ScanResultAction(scanResultPassed, buildStatusFail, severityMap, false, listener, "");
     Assert.assertNotNull(result);
     Assert.assertEquals(severityMap.get("operator"), "and");
   }
@@ -77,7 +77,7 @@ public class ScanResultActionTest {
   public void testscanResultActionHighSeverityLimit(){
     boolean buildStatusFail = false;
     Mockito.doReturn(printStream).when(listener).getLogger();
-    ScanResultAction result = new ScanResultAction(scanResultPassed, buildStatusFail, severityMap, false, listener);
+    ScanResultAction result = new ScanResultAction(scanResultPassed, buildStatusFail, severityMap, false, listener, "");
     Assert.assertNotNull(result);
     Assert.assertEquals(result.getHigh(), 4);
   }

@@ -153,6 +153,12 @@ public class TemplateScanBuilder extends Builder implements SimpleBuildStep {
         listener.getLogger().println("Prisma Cloud IaC Scan: Destination File : " + destinationFile);
 
         String jobName = build.getDisplayName();
+        String parentName = build.getParent().getName();
+        if(jobName != null && parentName != null) {
+            listener.getLogger().println("Prisma Cloud IaC Scan: Job Name : " + jobName);
+            listener.getLogger().println("Prisma Cloud IaC Scan: Parent Name : " + parentName);
+        }
+
         //Create zip file
         boolean isZipFileCreated = createZipFile(sourceFolder, destinationFile);
 
@@ -189,7 +195,7 @@ public class TemplateScanBuilder extends Builder implements SimpleBuildStep {
                 listener.getLogger().println("Prisma Cloud IaC Scan: Partial error not detected....");
             }
             build.addAction(new ScanResultAction(result, buildStatus,
-                    getSeverityMap(failureCriteriaHigh, failureCriteriaMedium, failureCriteriaLow, failureCriteriaOperator), apiResponseError, listener));
+                    getSeverityMap(failureCriteriaHigh, failureCriteriaMedium, failureCriteriaLow, failureCriteriaOperator), apiResponseError, listener, parentName));
         } else {
             throw new AbortException("Prisma Cloud IaC Scan: Failed to create Zipfile");
         }

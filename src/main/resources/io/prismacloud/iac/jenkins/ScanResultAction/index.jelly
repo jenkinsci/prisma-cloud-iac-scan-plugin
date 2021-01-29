@@ -126,26 +126,26 @@
                                 <thead>
                                     <tr>
                                          <th
-                                            class="px-6 py-4 border-b border-black-200 bg-black-50 text-left text-xs leading-4 font-medium black-gray-500 uppercase tracking-wider"
+                                            class="px-6 py-4 border-b border-black-200 bg-black-50 text-left text-xs leading-4 font-medium black-gray-500  tracking-wider"
                                             style="text-align: left; background-color: darkgray !important; border-top: none !important;"
                                          >
                                              SR#
                                          </th>
 
                                         <th
-                                            class="px-6 py-4 border-b border-black-200 bg-black-50 text-left text-xs leading-4 font-medium black-gray-500 uppercase tracking-wider"
+                                            class="px-6 py-4 border-b border-black-200 bg-black-50 text-left text-xs leading-4 font-medium black-gray-500  tracking-wider"
                                             style="text-align: left; background-color: darkgray !important; border-top: none !important;"
                                         >
                                             Severity
                                         </th>
                                         <th
-                                            class="px-6 py-4 border-b border-black-200 bg-black-50 text-left text-xs leading-4 font-medium black-gray-500 uppercase tracking-wider"
+                                            class="px-6 py-4 border-b border-black-200 bg-black-50 text-left text-xs leading-4 font-medium black-gray-500  tracking-wider"
                                             style="text-align: left; background-color: darkgray !important; border-top: none !important;"
                                         >
-                                            Name
+                                            Policy Name
                                         </th>
                                         <th
-                                            class="px-6 py-4 border-b border-black-200 bg-black-50 text-left text-xs leading-4 font-medium black-gray-500 uppercase tracking-wider"
+                                            class="px-6 py-4 border-b border-black-200 bg-black-50 text-left text-xs leading-4 font-medium black-gray-500  tracking-wider"
                                             style="text-align: left; background-color: darkgray !important; border-top: none !important;"
                                         >
                                             Files
@@ -183,9 +183,17 @@
                                                 </div>
                                             </td>
 
+                                            <j:if test="${!empty(scanResult.docUrl)}">
                                             <td class="px-6 py-4 whitespace-no-wrap border-b border-black-200" style="text-align: left">
                                                 <span class="text-sm leading-4 text-black-700" style="text-align: left"> <a href="${scanResult.docUrl}" target="_blank" rel="noopener noreferrer"> ${scanResult.name} </a> </span>
                                             </td>
+                                            </j:if>
+                                            <j:if test="${empty(scanResult.docUrl)}">
+                                            <td class="px-6 py-4 whitespace-no-wrap border-b border-black-200">
+                                                <span class="text-sm leading-4 text-black-700">${scanResult.name}</span>
+                                            </td>
+                                            </j:if>
+
 
                                             <td class="px-6 py-4 whitespace-no-wrap border-b border-black-200" style="text-align: left;">
                                             <j:forEach var="jvar_file" items="${scanResult.files}" >
@@ -221,13 +229,13 @@
                                          <thead>
 
                                             <tr>
-                                            <th class="px-6 py-4 border-b border-black-200 bg-black-50 text-left text-xs leading-4 font-medium black-gray-500 uppercase tracking-wider"
+                                            <th class="px-6 py-3 border-b border-black-200 bg-black-50 text-left text-xs leading-4 font-medium black-gray-500  tracking-wider"
                                                 style="text-align: left; background-color: darkgray !important; border-top: none !important;"
                                             >
                                               SR#
                                               </th>
 
-                                                <th class="px-6 py-4 border-b border-black-200 bg-black-50 text-left text-xs leading-4 font-medium black-gray-500 uppercase tracking-wider"
+                                                <th class="px-6 py-3 border-b border-black-200 bg-black-50 text-left text-xs leading-4 font-medium black-gray-500  tracking-wider"
                                                   style="text-align: left; background-color: darkgray !important; border-top: none !important;" >
                                                Error Message
                                                </th>
@@ -237,14 +245,14 @@
 
                                             <j:forEach indexVar="index" var="errorResponse" items="${it.errorResponseList}">
                                             <tr>
-                                            <td class="px-6 py-4 border-b border-black-200"  style="text-align: left">
+                                            <td class="px-6 py-3 border-b border-black-200"  style="text-align: left">
 
                                               <div class="text-sm leading-4 font-medium text-black-700"  style="text-align: left">${index + 1}</div>
 
 
                                             </td>
 
-                                              <td class="px-6 py-4 whitespace-no-wrap border-b border-black-200" style="text-align: left;">
+                                              <td class="px-6 py-3 whitespace-no-wrap border-b border-black-200" style="text-align: left;">
                                               <j:forEach var="jvar_error" items="${errorResponse.apiErrorMessageList}" >
                                                     <span class="text-sm leading-4 text-black-700" style="text-align: left;">${jvar_error}</span> <br />
                                               </j:forEach>

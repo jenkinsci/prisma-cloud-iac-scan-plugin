@@ -5,6 +5,7 @@ import static org.mockito.Matchers.anyMap;
 import static org.mockito.Mockito.spy;
 
 
+import hudson.model.Job;
 import io.prismacloud.iac.commons.config.PrismaCloudConfiguration;
 import io.prismacloud.iac.commons.model.IacTemplateParameters;
 import io.prismacloud.iac.commons.service.impl.PrismaCloudServiceImpl;
@@ -38,6 +39,8 @@ public class TemplateScanBuilderTest {
   public TemporaryFolder temp = new TemporaryFolder();
   @Mock
   IacTemplateParameters iacTemplateParameters;
+  @Mock
+  Job job;
 
   TemplateScanBuilder templateScanBuilder;
   TaskListener listener;
@@ -53,6 +56,7 @@ public class TemplateScanBuilderTest {
     build = Mockito.mock(Run.class, Mockito.CALLS_REAL_METHODS);
     launcher = Mockito.mock(Launcher.class, Mockito.CALLS_REAL_METHODS);
     listener = Mockito.mock(TaskListener.class, Mockito.CALLS_REAL_METHODS);
+
     propertiesMap = new HashMap<>();
     propertiesMap.put("prisma_cloud_cicd_failure_criteria", "High: 3, Medium: 17, Low: 1000, Operator: and");
     tmpFile = temp.newFile();
@@ -73,6 +77,8 @@ public class TemplateScanBuilderTest {
     Mockito.doReturn(true).when(templateScanBuilder).checkSeverity(any(String.class), any(TaskListener.class));
     Mockito.doReturn(propertiesMap).when(templateScanBuilder).getSeverityMap(any(String.class),any(String.class),any(String.class),any(String.class));
     Mockito.doReturn(true).when(templateScanBuilder).createZipFile(any(File.class), any(File.class));
+    Mockito.doReturn(job).when(build).getParent();
+    Mockito.doReturn("Job").when(job).getName();
     templateScanBuilder.perform(build, workspace, launcher, listener);
   }
 }

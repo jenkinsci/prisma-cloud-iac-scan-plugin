@@ -17,6 +17,7 @@ import java.util.*;
 
 import jenkins.model.RunAction2;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 
 public class ScanResultAction implements RunAction2 {
 
@@ -33,17 +34,26 @@ public class ScanResultAction implements RunAction2 {
     private int total;
     private String status;
     private List<ErrorDetail> errorResponseList;
+    private String replaceParentName;
 
 
     private Map<String, String> severityMap;
 
     @SuppressFBWarnings({"UC_USELESS_OBJECT"})
     public ScanResultAction(String scanResultJsonFile, boolean buildStatus,
-                            Map<String, String> map, boolean apiResponseError, TaskListener listener) {
+                            Map<String, String> map, boolean apiResponseError, TaskListener listener, String parentName) {
 
         if (listener != null) {
-            listener.getLogger().println("Prisma Cloud IaC Scan: Executing Scan Result Action ....");
+            listener.getLogger().println("Prisma Cloud IaC Scan: Executing Scan Result Action for Jenkins Job : " + parentName);
         }
+
+        if (parentName != null && !parentName.equals("")) {
+            replaceParentName = "/" + parentName;
+        } else {
+            replaceParentName = "";
+            listener.getLogger().println("Jenkins Parent Name is Null or Empty ...");
+        }
+
 
         if (scanResultJsonFile != null && !scanResultJsonFile.isEmpty()) {
             //Read main Response
@@ -62,6 +72,9 @@ public class ScanResultAction implements RunAction2 {
                 ErrorDetail prismaError = new ErrorDetail();
                 prismaError.setApiErrorStatus(jsonErr.toString().replace("\"", ""));
                 String errorDetailsString = jsonObjectParent.get("message").toString().replace("\"", "");
+                errorDetailsString = errorDetailsString.replaceAll(replaceParentName, "");
+                errorDetailsString = errorDetailsString.replaceAll("\\\\n", "");
+                errorDetailsString = errorDetailsString.replaceAll("\\\\", "");
                 List<String> apiErrorMessageList = new ArrayList<>();
                 if (errorDetailsString != null && !errorDetailsString.equalsIgnoreCase("")) {
                     apiErrorMessageList = Arrays.asList(errorDetailsString.split(";"));
@@ -141,6 +154,8 @@ public class ScanResultAction implements RunAction2 {
                         String severity = jsonAttributes.get("severity").getAsString();
                         String name = jsonAttributes.get("name").getAsString();
                         String file = getfileNames(jsonAttributes.get("files").getAsJsonArray());
+
+                        file = file.replaceAll(replaceParentName, "");
                         List<String> filesList = new ArrayList<>();
                         if (file != null && !file.equalsIgnoreCase("")) {
                             filesList = Arrays.asList(file.split(","));
@@ -198,6 +213,9 @@ public class ScanResultAction implements RunAction2 {
             prismaError.setApiErrorStatus(status.toString().substring(1, status.toString().length() - 1));
 
             String errorDetailsString = detail.toString().substring(1, detail.toString().length() - 1);
+            errorDetailsString = errorDetailsString.replaceAll(replaceParentName, "");
+            errorDetailsString = errorDetailsString.replaceAll("\\\\n", "");
+            errorDetailsString = errorDetailsString.replaceAll("\\\\", "");
             List<String> apiErrorMessageList = new ArrayList<>();
             if (errorDetailsString != null && !errorDetailsString.equalsIgnoreCase("")) {
                 apiErrorMessageList = Arrays.asList(errorDetailsString.split(";"));
