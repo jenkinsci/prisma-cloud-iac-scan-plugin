@@ -20,19 +20,23 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * JsonApiModelScanDetails
+ * JsonApiModelScansResponse
  */
 
-@javax.annotation.Generated(value = "io.swagger.codegen.v3.generators.java.JavaClientCodegen", date = "2021-01-26T11:29:52.304914+05:30[Asia/Kolkata]")public class JsonApiModelScanDetails {
+@javax.annotation.Generated(value = "io.swagger.codegen.v3.generators.java.JavaClientCodegen", date = "2021-01-26T11:29:52.304914+05:30[Asia/Kolkata]")public class JsonApiModelScansResponse {
 
   @JsonProperty("meta")
 
-  private JsonApiModelScanDetailsMeta meta = null;
+  private JsonApiModelScansResponseMeta meta = null;
 
   @JsonProperty("data")
 
-  private List<IacPolicyViolation> data = new ArrayList<>();
-  public JsonApiModelScanDetails meta(JsonApiModelScanDetailsMeta meta) {
+  private List<JsonApiModelScanTableData> data = new ArrayList<>();
+
+  @JsonProperty("links")
+
+  private JsonApiModelScansResponseLinks links = null;
+  public JsonApiModelScansResponse meta(JsonApiModelScansResponseMeta meta) {
     this.meta = meta;
     return this;
   }
@@ -44,18 +48,18 @@ import java.util.Objects;
   * @return meta
   **/
   @Schema(required = true, description = "")
-  public JsonApiModelScanDetailsMeta getMeta() {
+  public JsonApiModelScansResponseMeta getMeta() {
     return meta;
   }
-  public void setMeta(JsonApiModelScanDetailsMeta meta) {
+  public void setMeta(JsonApiModelScansResponseMeta meta) {
     this.meta = meta;
   }
-  public JsonApiModelScanDetails data(List<IacPolicyViolation> data) {
+  public JsonApiModelScansResponse data(List<JsonApiModelScanTableData> data) {
     this.data = data;
     return this;
   }
 
-  public JsonApiModelScanDetails addDataItem(IacPolicyViolation dataItem) {
+  public JsonApiModelScansResponse addDataItem(JsonApiModelScanTableData dataItem) {
     this.data.add(dataItem);
     return this;
   }
@@ -65,11 +69,29 @@ import java.util.Objects;
   * @return data
   **/
   @Schema(required = true, description = "")
-  public List<IacPolicyViolation> getData() {
+  public List<JsonApiModelScanTableData> getData() {
     return data;
   }
-  public void setData(List<IacPolicyViolation> data) {
+  public void setData(List<JsonApiModelScanTableData> data) {
     this.data = data;
+  }
+  public JsonApiModelScansResponse links(JsonApiModelScansResponseLinks links) {
+    this.links = links;
+    return this;
+  }
+
+  
+
+  /**
+  * Get links
+  * @return links
+  **/
+  @Schema(description = "")
+  public JsonApiModelScansResponseLinks getLinks() {
+    return links;
+  }
+  public void setLinks(JsonApiModelScansResponseLinks links) {
+    this.links = links;
   }
   @Override
   public boolean equals(Object o) {
@@ -79,23 +101,25 @@ import java.util.Objects;
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    JsonApiModelScanDetails jsonApiModelScanDetails = (JsonApiModelScanDetails) o;
-    return Objects.equals(this.meta, jsonApiModelScanDetails.meta) &&
-        Objects.equals(this.data, jsonApiModelScanDetails.data);
+    JsonApiModelScansResponse jsonApiModelScansResponse = (JsonApiModelScansResponse) o;
+    return Objects.equals(this.meta, jsonApiModelScansResponse.meta) &&
+        Objects.equals(this.data, jsonApiModelScansResponse.data) &&
+        Objects.equals(this.links, jsonApiModelScansResponse.links);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(meta, data);
+    return Objects.hash(meta, data, links);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class JsonApiModelScanDetails {\n");
+    sb.append("class JsonApiModelScansResponse {\n");
     
     sb.append("    meta: ").append(toIndentedString(meta)).append("\n");
     sb.append("    data: ").append(toIndentedString(data)).append("\n");
+    sb.append("    links: ").append(toIndentedString(links)).append("\n");
     sb.append("}");
     return sb.toString();
   }

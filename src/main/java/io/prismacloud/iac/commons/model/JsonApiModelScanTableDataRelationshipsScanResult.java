@@ -16,40 +16,17 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.Objects;
-import java.util.UUID;
 
 /**
- * JsonApiModelAsyncScanSessionData
+ * Scan result object related to the scan
  */
-
-@javax.annotation.Generated(value = "io.swagger.codegen.v3.generators.java.JavaClientCodegen", date = "2021-01-26T11:29:52.304914+05:30[Asia/Kolkata]")public class JsonApiModelAsyncScanSessionData {
-
-  @JsonProperty("id")
-
-  private UUID id = null;
+@Schema(description = "Scan result object related to the scan")
+@javax.annotation.Generated(value = "io.swagger.codegen.v3.generators.java.JavaClientCodegen", date = "2021-01-26T11:29:52.304914+05:30[Asia/Kolkata]")public class JsonApiModelScanTableDataRelationshipsScanResult {
 
   @JsonProperty("links")
 
-  private JsonApiModelAsyncScanSessionDataLinks links = null;
-  public JsonApiModelAsyncScanSessionData id(UUID id) {
-    this.id = id;
-    return this;
-  }
-
-  
-
-  /**
-  * Scan UUID
-  * @return id
-  **/
-  @Schema(description = "Scan UUID")
-  public UUID getId() {
-    return id;
-  }
-  public void setId(UUID id) {
-    this.id = id;
-  }
-  public JsonApiModelAsyncScanSessionData links(JsonApiModelAsyncScanSessionDataLinks links) {
+  private JsonApiModelScanTableDataRelationshipsScanResultLinks links = null;
+  public JsonApiModelScanTableDataRelationshipsScanResult links(JsonApiModelScanTableDataRelationshipsScanResultLinks links) {
     this.links = links;
     return this;
   }
@@ -61,10 +38,10 @@ import java.util.UUID;
   * @return links
   **/
   @Schema(description = "")
-  public JsonApiModelAsyncScanSessionDataLinks getLinks() {
+  public JsonApiModelScanTableDataRelationshipsScanResultLinks getLinks() {
     return links;
   }
-  public void setLinks(JsonApiModelAsyncScanSessionDataLinks links) {
+  public void setLinks(JsonApiModelScanTableDataRelationshipsScanResultLinks links) {
     this.links = links;
   }
   @Override
@@ -75,22 +52,20 @@ import java.util.UUID;
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    JsonApiModelAsyncScanSessionData jsonApiModelAsyncScanSessionData = (JsonApiModelAsyncScanSessionData) o;
-    return Objects.equals(this.id, jsonApiModelAsyncScanSessionData.id) &&
-        Objects.equals(this.links, jsonApiModelAsyncScanSessionData.links);
+    JsonApiModelScanTableDataRelationshipsScanResult jsonApiModelScanTableDataRelationshipsScanResult = (JsonApiModelScanTableDataRelationshipsScanResult) o;
+    return Objects.equals(this.links, jsonApiModelScanTableDataRelationshipsScanResult.links);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, links);
+    return Objects.hash(links);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class JsonApiModelAsyncScanSessionData {\n");
+    sb.append("class JsonApiModelScanTableDataRelationshipsScanResult {\n");
     
-    sb.append("    id: ").append(toIndentedString(id)).append("\n");
     sb.append("    links: ").append(toIndentedString(links)).append("\n");
     sb.append("}");
     return sb.toString();

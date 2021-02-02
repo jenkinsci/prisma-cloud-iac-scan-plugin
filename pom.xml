@@ -49,6 +49,10 @@
     <properties>
         <jenkins.version>2.164.3</jenkins.version>
         <java.level>8</java.level>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <client.base.package.name>org.example.so</client.base.package.name>
+
     </properties>
 
 
@@ -151,7 +155,62 @@
             <artifactId>validation-api</artifactId>
             <version>2.0.0.CR1</version>
         </dependency>
+
+        <!--
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+            <version>5.1.10.RELEASE</version>
+        </dependency>
+       HTTP client: Spring RestTemplate -->
+
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations</artifactId>
+            <version>2.0.8</version>
+        </dependency>
     </dependencies>
+
+<!--
+    <build>
+        <plugins>
+            <plugin>
+
+                <groupId>io.swagger.codegen.v3</groupId>
+                <artifactId>swagger-codegen-maven-plugin</artifactId>
+                <version>3.0.8</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.basedir}/src/main/resources/api.yaml</inputSpec>
+                            <language>java</language>
+                            <modelPackage>${client.base.package.name}.model</modelPackage>
+                            <apiPackage>${client.base.package.name}.api</apiPackage>
+                            <invokerPackage>${client.base.package.name}.invoker</invokerPackage>
+                            <output>${project.build.directory}/generated-sources</output>
+                            <configOptions>
+                                <groupId>${project.groupId}</groupId>
+                                <artifactId>${project.artifactId}</artifactId>
+                                <artifactVersion>${project.version}</artifactVersion>
+                                <library>resttemplate</library>
+                                <java8>true</java8>
+                                <dateLibrary>java8</dateLibrary>
+                                <licenseName>Apache 2.0</licenseName>
+                                <modelPropertyNaming>snake_case</modelPropertyNaming>
+                                <licenseUrl>https://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+
+-->
 
     <scm>
         <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>

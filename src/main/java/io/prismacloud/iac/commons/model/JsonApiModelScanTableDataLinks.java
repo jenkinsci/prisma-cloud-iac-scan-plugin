@@ -18,31 +18,31 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Objects;
 
 /**
- * JsonApiModelScanStatusResponseDataAttributes
+ * Links related to the scan
  */
+@Schema(description = "Links related to the scan")
+@javax.annotation.Generated(value = "io.swagger.codegen.v3.generators.java.JavaClientCodegen", date = "2021-01-26T11:29:52.304914+05:30[Asia/Kolkata]")public class JsonApiModelScanTableDataLinks {
 
-@javax.annotation.Generated(value = "io.swagger.codegen.v3.generators.java.JavaClientCodegen", date = "2021-01-26T11:29:52.304914+05:30[Asia/Kolkata]")public class JsonApiModelScanStatusResponseDataAttributes {
+  @JsonProperty("self")
 
-  @JsonProperty("status")
-
-  private JsonApiModelScanStatus status = null;
-  public JsonApiModelScanStatusResponseDataAttributes status(JsonApiModelScanStatus status) {
-    this.status = status;
+  private String self = null;
+  public JsonApiModelScanTableDataLinks self(String self) {
+    this.self = self;
     return this;
   }
 
   
 
   /**
-  * Get status
-  * @return status
+  * URL to the scan result
+  * @return self
   **/
-  @Schema(description = "")
-  public JsonApiModelScanStatus getStatus() {
-    return status;
+  @Schema(example = "/scans/3fa85f64-5717-4562-b3fc-2c963f66afa6", description = "URL to the scan result")
+  public String getSelf() {
+    return self;
   }
-  public void setStatus(JsonApiModelScanStatus status) {
-    this.status = status;
+  public void setSelf(String self) {
+    this.self = self;
   }
   @Override
   public boolean equals(Object o) {
@@ -52,21 +52,21 @@ import java.util.Objects;
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    JsonApiModelScanStatusResponseDataAttributes jsonApiModelScanStatusResponseDataAttributes = (JsonApiModelScanStatusResponseDataAttributes) o;
-    return Objects.equals(this.status, jsonApiModelScanStatusResponseDataAttributes.status);
+    JsonApiModelScanTableDataLinks jsonApiModelScanTableDataLinks = (JsonApiModelScanTableDataLinks) o;
+    return Objects.equals(this.self, jsonApiModelScanTableDataLinks.self);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(status);
+    return Objects.hash(self);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class JsonApiModelScanStatusResponseDataAttributes {\n");
+    sb.append("class JsonApiModelScanTableDataLinks {\n");
     
-    sb.append("    status: ").append(toIndentedString(status)).append("\n");
+    sb.append("    self: ").append(toIndentedString(self)).append("\n");
     sb.append("}");
     return sb.toString();
   }

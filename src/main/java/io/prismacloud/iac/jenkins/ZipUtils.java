@@ -1,6 +1,9 @@
 package io.prismacloud.iac.jenkins;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -9,6 +12,9 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 public class ZipUtils {
+
+    Logger logger = LoggerFactory.getLogger(ZipUtils.class);
+
     public void zipFolder(String sourceFilePath, String zipFilePath) throws IOException {
         ZipOutputStream zipOutputStream = new ZipOutputStream(new FileOutputStream(zipFilePath));
         File file = new File(sourceFilePath);
@@ -17,7 +23,7 @@ public class ZipUtils {
         zipOutputStream.close();
     }
 
-    @SuppressFBWarnings({"OBL_UNSATISFIED_OBLIGATION", "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE","OS_OPEN_STREAM"})
+    @SuppressFBWarnings({"OBL_UNSATISFIED_OBLIGATION", "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE", "OS_OPEN_STREAM"})
     private void zipFiles(String folderPath, String filePath, ZipOutputStream zipOutputStream) throws IOException {
         if (zipOutputStream == null)
             return;
@@ -26,7 +32,7 @@ public class ZipUtils {
 
 
         if (!file.getName().equalsIgnoreCase("iacscan.zip") &&
-            !(file.isDirectory() && file.getName().startsWith("."))) {
+                !(file.isDirectory() && file.getName().startsWith("."))) {
             if (file.isFile()) {
                 ZipEntry zipEntry = new ZipEntry(filePath);
                 FileInputStream fileInputStream = new FileInputStream(file);
@@ -46,6 +52,8 @@ public class ZipUtils {
                     zipOutputStream.putNextEntry(zipEntry);
                     zipOutputStream.closeEntry();
                 }
+
+                logger.info("Adding file recursively to ZIP");
 
                 for (String aFileList : fileList) {
                     zipFiles(folderPath, filePath + File.separator + aFileList, zipOutputStream);

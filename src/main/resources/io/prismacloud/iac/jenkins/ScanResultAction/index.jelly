@@ -6,7 +6,7 @@
         </l:side-panel>
         <l:main-panel>
             <main class="flex-1 overflow-x-hidden overflow-y-auto bg-white-200">
-                <j:if test="${it.apiError == false}">
+
                     <div class="bg-white rounded border border-gray-200">
                         <div class="flex my-3 content-center" style="margin: 0 !important;">
                             <div class="w-1/6 text-center" style="padding-top: 28px; margin: 0 !important;">
@@ -105,68 +105,48 @@
                             </div>
                         </div>
                     </div>
-                </j:if>
 
-                <j:if test="${it.apiError == true }">
-                    <div class="-my-2 py-2 overflow-x-auto sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-                       <p><strong> Error from Prisma Cloud IaC Scan</strong></p>
-                    </div>
-                    <div class="align-middle inline-block min-w-full shadow overflow-hidden sm:rounded-lg border-b border-black-200">
-                      <table class="pane bigtable stripped-odd">
-                         <thead>
-                            <tr>
-                               <th class="px-6 py-3 border-b border-black-200 bg-black-50 text-left text-xs leading-4 font-medium black-gray-500 uppercase tracking-wider"
-                                   style="text-align: left; background-color: darkgray !important; border-top: none !important;">
-                                 Error Status
-                               </th>
-                                <th class="px-6 py-3 border-b border-black-200 bg-black-50 text-left text-xs leading-4 font-medium black-gray-500 uppercase tracking-wider"
-                                  style="text-align: left; background-color: darkgray !important; border-top: none !important;" >
-                               Error Message
-                               </th>
-                            </tr>
-                         </thead>
-                         <tbody>
 
-                            <j:forEach indexVar="index" var="errorResponse" items="${it.errorResponseList}">
-                            <tr>
-                              <td> ${errorResponse.apiErrorStatus} </td>
-                              <td> ${errorResponse.apiErrorMessage} </td>
-                            </tr>
-                            </j:forEach>
-
-                         </tbody>
-                     </table>
-                    </div>
-                </j:if>
+                <br />
+                <br />
 
                 <j:if test="${size(it.scanResults) > 0 }">
-                    <div class="-my-2 py-2 overflow-x-auto sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-                        <p><strong>${it.total} Issues</strong></p>
+                    <div class="-my-2 py-2 overflow-x-auto sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8" style="text-align: left;">
+                        <p><strong>Security Issues from Prisma Cloud IaC Scan</strong></p>
+
+                         <j:if test="${size(it.scanResults) > 1 }">
+                         <p><strong>${it.total} Issues</strong></p>
+                         </j:if>
+                         <j:if test="${size(it.scanResults) == 1 }">
+                         <p><strong>${it.total} Issue</strong></p>
+                         </j:if>
+
                         <div class="align-middle inline-block min-w-full shadow overflow-hidden sm:rounded-lg border-b border-black-200">
                             <table class="pane bigtable stripped-odd" style="max-width :100%; white-space: nowrap;">
                                 <thead>
                                     <tr>
+                                         <th
+                                            class="px-6 py-4 border-b border-black-200 bg-black-50 text-left text-xs leading-4 font-medium black-gray-500  tracking-wider"
+                                            style="text-align: left; background-color: darkgray !important; border-top: none !important;"
+                                         >
+                                             SR#
+                                         </th>
+
                                         <th
-                                            class="px-6 py-3 border-b border-black-200 bg-black-50 text-left text-xs leading-4 font-medium black-gray-500 uppercase tracking-wider"
-                                            style="text-align: center; background-color: darkgray !important; border-top: none !important;"
-                                        >
-                                            SR#
-                                        </th>
-                                        <th
-                                            class="px-6 py-3 border-b border-black-200 bg-black-50 text-left text-xs leading-4 font-medium black-gray-500 uppercase tracking-wider"
-                                            style="text-align: center; background-color: darkgray !important; border-top: none !important;"
+                                            class="px-6 py-4 border-b border-black-200 bg-black-50 text-left text-xs leading-4 font-medium black-gray-500  tracking-wider"
+                                            style="text-align: left; background-color: darkgray !important; border-top: none !important;"
                                         >
                                             Severity
                                         </th>
                                         <th
-                                            class="px-6 py-3 border-b border-black-200 bg-black-50 text-left text-xs leading-4 font-medium black-gray-500 uppercase tracking-wider"
-                                            style="text-align: center; background-color: darkgray !important; border-top: none !important;"
+                                            class="px-6 py-4 border-b border-black-200 bg-black-50 text-left text-xs leading-4 font-medium black-gray-500  tracking-wider"
+                                            style="text-align: left; background-color: darkgray !important; border-top: none !important;"
                                         >
-                                            Name
+                                            Policy Name
                                         </th>
                                         <th
-                                            class="px-6 py-3 border-b border-black-200 bg-black-50 text-left text-xs leading-4 font-medium black-gray-500 uppercase tracking-wider"
-                                            style="text-align: center; background-color: darkgray !important; border-top: none !important;"
+                                            class="px-6 py-4 border-b border-black-200 bg-black-50 text-left text-xs leading-4 font-medium black-gray-500  tracking-wider"
+                                            style="text-align: left; background-color: darkgray !important; border-top: none !important;"
                                         >
                                             Files
                                         </th>
@@ -176,15 +156,11 @@
                                 <tbody class="securityIssues">
                                     <j:forEach indexVar="index" var="scanResult" items="${it.scanResults}">
                                         <tr>
-                                            <td class="px-6 py-4 border-b border-black-200">
-                                                <div class="flex items-center">
-                                                    <div class="ml-4">
-                                                        <div class="text-sm leading-4 font-medium text-black-700">${index + 1}</div>
-                                                    </div>
-                                                </div>
-                                            </td>
+                                             <td class="px-6 py-4 border-b border-black-200" style="text-align: left">
+                                                       <div class="text-sm leading-4 font-medium text-black-700"  style="text-align: left">${index + 1}</div>
+                                             </td>
 
-                                            <td class="px-6 py-4 border-b border-black-200">
+                                            <td class="px-6 py-4 border-b border-black-200" style="text-align: left;">
                                                 <j:if test="${(scanResult.severity) == 'high' }">
                                                     <img src="${resURL}/plugin/prisma-cloud-iac-scan/icons/high.svg" style="float: left;" width="30" height="20" />
                                                 </j:if>
@@ -194,7 +170,7 @@
                                                 <j:if test="${(scanResult.severity) == 'low' }">
                                                     <img src="${resURL}/plugin/prisma-cloud-iac-scan/icons/low.svg" style="float: left;" width="30" height="20" />
                                                 </j:if>
-                                                <div class="text-sm leading-4 text-black-700">
+                                                <div class="text-sm leading-4 text-black-700" style="text-align: left;">
                                                     <j:if test="${(scanResult.severity) == 'high' }">
                                                         High
                                                     </j:if>
@@ -207,12 +183,22 @@
                                                 </div>
                                             </td>
 
+                                            <j:if test="${!empty(scanResult.docUrl)}">
+                                            <td class="px-6 py-4 whitespace-no-wrap border-b border-black-200" style="text-align: left">
+                                                <span class="text-sm leading-4 text-black-700" style="text-align: left"> <a href="${scanResult.docUrl}" target="_blank" rel="noopener noreferrer"> ${scanResult.name} </a> </span>
+                                            </td>
+                                            </j:if>
+                                            <j:if test="${empty(scanResult.docUrl)}">
                                             <td class="px-6 py-4 whitespace-no-wrap border-b border-black-200">
                                                 <span class="text-sm leading-4 text-black-700">${scanResult.name}</span>
                                             </td>
+                                            </j:if>
 
-                                            <td class="px-6 py-4 whitespace-no-wrap border-b border-black-200">
-                                                <span class="text-sm leading-4 text-black-700">${scanResult.file}</span>
+
+                                            <td class="px-6 py-4 whitespace-no-wrap border-b border-black-200" style="text-align: left;">
+                                            <j:forEach var="jvar_file" items="${scanResult.files}" >
+                                                <span class="text-sm leading-4 text-black-700" style="text-align: left;">${jvar_file}</span> <br />
+                                            </j:forEach>
                                             </td>
                                         </tr>
                                     </j:forEach>
@@ -221,13 +207,67 @@
                         </div>
                     </div>
                 </j:if>
-                <j:if test="${size(it.scanResults) == 0}">
-                 <j:if test="${it.apiError == false}">
-                 <div class="-my-2 py-2 overflow-x-auto sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-                   <p><strong> No Records Found!</strong></p>
-                 </div>
-                 </j:if>
-                </j:if>
+
+
+
+                <br />
+                <br />
+
+                <j:if test="${size(it.errorResponseList) > 0 }">
+                                    <div class="-my-2 py-2 overflow-x-auto sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8" style="text-align: left;">
+                                       <p><strong> Errors from Prisma Cloud IaC Scan</strong></p>
+                                       <j:if test="${size(it.errorResponseList) > 1 }">
+                                       <p><strong>${size(it.errorResponseList)} Errors</strong></p>
+                                       </j:if>
+                                        <j:if test="${size(it.errorResponseList) == 1 }">
+                                        <p><strong>${size(it.errorResponseList)} Error</strong></p>
+                                        </j:if>
+
+
+                                    <div class="align-middle inline-block min-w-full shadow overflow-hidden sm:rounded-lg border-b border-black-200">
+                                      <table class="pane bigtable stripped-odd" style="max-width :100%; white-space: nowrap;">
+                                         <thead>
+
+                                            <tr>
+                                            <th class="px-6 py-4 border-b border-black-200 bg-black-50 text-left text-xs leading-4 font-medium black-gray-500  tracking-wider"
+                                                style="text-align: left; background-color: darkgray !important; border-top: none !important;"
+                                            >
+                                              SR#
+                                              </th>
+
+                                                <th class="px-6 py-4 border-b border-black-200 bg-black-50 text-left text-xs leading-4 font-medium black-gray-500  tracking-wider"
+                                                  style="text-align: left; background-color: darkgray !important; border-top: none !important;" >
+                                               Error Message
+                                               </th>
+                                            </tr>
+                                         </thead>
+                                         <tbody>
+
+                                            <j:forEach indexVar="index" var="errorResponse" items="${it.errorResponseList}">
+                                            <tr>
+                                            <td class="px-6 py-4 border-b border-black-200"  style="text-align: left">
+
+                                              <div class="text-sm leading-4 font-medium text-black-700"  style="text-align: left">${index + 1}</div>
+
+
+                                            </td>
+
+                                              <td class="px-6 py-4 whitespace-no-wrap border-b border-black-200" style="text-align: left;">
+                                              <j:forEach var="jvar_error" items="${errorResponse.apiErrorMessageList}" >
+                                                    <span class="text-sm leading-4 text-black-700" style="text-align: left;">${jvar_error}</span> <br />
+                                              </j:forEach>
+                                              </td>
+                                            </tr>
+                                            </j:forEach>
+
+                                         </tbody>
+                                     </table>
+                                    </div>
+                                   </div>
+                                </j:if>
+
+
+
             </main>
             <shared:common-css />
         </l:main-panel>
