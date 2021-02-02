@@ -177,7 +177,7 @@ public class TemplateScanBuilder extends Builder implements SimpleBuildStep {
         }
 
         //Initialize Template Parameters
-        IacTemplateParameters iacTemplateParameters = initializeIacTemplateParameters(sourceFolder, listener);
+        IacTemplateParameters iacTemplateParameters = initializeIacTemplateParameters(sourceFolder, listener, parentName);
 
         listener.getLogger().println("Prisma Cloud IaC Scan: Config YML files processing completed");
 
@@ -414,7 +414,7 @@ public class TemplateScanBuilder extends Builder implements SimpleBuildStep {
     }
 
     @SuppressFBWarnings({"NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"})
-    public IacTemplateParameters initializeIacTemplateParameters(File sourceFolder, TaskListener listener) {
+    public IacTemplateParameters initializeIacTemplateParameters(File sourceFolder, TaskListener listener, String parentName) {
         listener.getLogger().println("Prisma Cloud IaC Scan: Inside initializeIacTemplateParameters");
 
         IacTemplateParameters iacTemplateParameters;
@@ -422,9 +422,9 @@ public class TemplateScanBuilder extends Builder implements SimpleBuildStep {
         File configYmlFile = new File(sourceFolder, ".prismaCloud/config.yml");
         File configYamlFile = new File(sourceFolder, ".prismaCloud/config.yaml");
         if (configYmlFile.exists() && configYmlFile.isFile() && configYmlFile.canRead()) {
-            iacTemplateParameters = ConfigYmlTagsUtil.readTemplateParams(listener.getLogger(), configYmlFile);
+            iacTemplateParameters = ConfigYmlTagsUtil.readTemplateParams(listener.getLogger(), configYmlFile, parentName);
         } else if (configYamlFile.exists() && configYamlFile.isFile() && configYamlFile.canRead()) {
-            iacTemplateParameters = ConfigYmlTagsUtil.readTemplateParams(listener.getLogger(), configYamlFile);
+            iacTemplateParameters = ConfigYmlTagsUtil.readTemplateParams(listener.getLogger(), configYamlFile, parentName);
         } else {
             iacTemplateParameters = new IacTemplateParameters();
         }

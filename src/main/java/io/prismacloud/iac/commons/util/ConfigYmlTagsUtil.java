@@ -7,12 +7,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import edu.umd.cs.findbugs.annotations.NoWarning;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.prismacloud.iac.commons.model.IacTemplateParameters;
 
 
 import java.io.File;
 import java.io.PrintStream;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ConfigYmlTagsUtil {
 
@@ -64,9 +67,12 @@ public class ConfigYmlTagsUtil {
      * @return IacTemplateParameters
      */
 
-    public static IacTemplateParameters readTemplateParams(PrintStream logger, File configFile) {
+    @SuppressFBWarnings("RE_POSSIBLE_UNINTENDED_PATTERN")
+    public static IacTemplateParameters readTemplateParams(PrintStream logger, File configFile, String parentName) {
         logger.println("Prisma Cloud IaC Scan: Inside readTemplateParams method");
         IacTemplateParameters iacTemplateParameters = new IacTemplateParameters();
+        String pathWithParentName  = "./"+ parentName+ "/";
+        String replacePath = "./";
         try {
             ObjectNode config = YAML.readValue(configFile, ObjectNode.class);
             if (config.hasNonNull("template_parameters")) {
@@ -79,16 +85,22 @@ public class ConfigYmlTagsUtil {
                         iacTemplateParameters.setVariables(templateParametersModel.getVariables());
                     }
                     if (templateParametersModel.getVariableFiles() != null && templateParametersModel.getVariableFiles().size() > 0) {
-                        iacTemplateParameters.setVariableFiles(templateParametersModel.getVariableFiles());
+                        List<String> variableFiles = templateParametersModel.getVariableFiles();
+                        variableFiles = variableFiles.stream().map((s -> s.replaceFirst(replacePath, pathWithParentName))).collect(Collectors.toList());
+                        iacTemplateParameters.setVariableFiles(variableFiles);
                     }
                     if (templateParametersModel.getFiles() != null && templateParametersModel.getFiles().size() > 0) {
-                        iacTemplateParameters.setFiles(templateParametersModel.getFiles());
+                        List<String> files = templateParametersModel.getFiles();
+                        files = files.stream().map((s -> s.replaceFirst(replacePath, pathWithParentName))).collect(Collectors.toList());
+                        iacTemplateParameters.setFiles(files);
                     }
                     if (templateParametersModel.getPolicyIdFilters() != null && templateParametersModel.getPolicyIdFilters().size() > 0) {
                         iacTemplateParameters.setPolicyIdFilters(templateParametersModel.getPolicyIdFilters());
                     }
                     if (templateParametersModel.getFolders() != null && templateParametersModel.getFolders().size() > 0) {
-                        iacTemplateParameters.setFolders(templateParametersModel.getFolders());
+                        List<String> folders = templateParametersModel.getFolders();
+                        folders = folders.stream().map((s -> s.replaceFirst(replacePath, pathWithParentName))).collect(Collectors.toList());
+                        iacTemplateParameters.setFolders(folders);
                     }
                     if (templateParametersModel.getScanPlanFilesOnly() != null) {
                         iacTemplateParameters.setScanPlanFilesOnly(templateParametersModel.getScanPlanFilesOnly());
