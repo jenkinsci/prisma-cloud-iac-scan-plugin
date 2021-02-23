@@ -76,7 +76,7 @@ public class TemplateScanBuilderTest {
     Mockito.doReturn(scanResult).when(templateScanBuilder).callPrismaCloudAsyncEndPoint(any(String.class),any(TaskListener.class), any(String.class), any(String.class), anyMap(), any(IacTemplateParameters.class));
     Mockito.doReturn(true).when(templateScanBuilder).checkSeverity(any(String.class), any(TaskListener.class));
     Mockito.doReturn(propertiesMap).when(templateScanBuilder).getSeverityMap(any(String.class),any(String.class),any(String.class),any(String.class));
-    Mockito.doReturn(true).when(templateScanBuilder).createZipFile(any(File.class), any(File.class));
+    Mockito.doReturn(true).when(templateScanBuilder).createZipFile(any(FilePath.class), any(FilePath.class));
     Mockito.doReturn(job).when(build).getParent();
     Mockito.doReturn("Job").when(job).getName();
     templateScanBuilder.perform(build, workspace, launcher, listener);

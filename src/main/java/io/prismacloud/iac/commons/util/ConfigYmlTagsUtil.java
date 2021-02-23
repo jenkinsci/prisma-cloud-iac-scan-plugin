@@ -1,21 +1,23 @@
 package io.prismacloud.iac.commons.util;
 
-import com.fasterxml.jackson.core.JsonFactory;
+import java.io.PrintStream;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import edu.umd.cs.findbugs.annotations.NoWarning;
+
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import hudson.FilePath;
 import io.prismacloud.iac.commons.model.IacTemplateParameters;
-
-
-import java.io.File;
-import java.io.PrintStream;
-import java.util.*;
-import java.util.stream.Collectors;
 
 public class ConfigYmlTagsUtil {
 
@@ -23,10 +25,10 @@ public class ConfigYmlTagsUtil {
 
     private static final ObjectMapper YAML = new ObjectMapper(new YAMLFactory());
 
-    public static Map<String, String> readTags(PrintStream logger, File configFile) {
+    public static Map<String, String> readTags(PrintStream logger, FilePath configFile) {
         logger.println("Prisma Cloud IaC Scan: Inside readTags method of ConfigYmlTagsUtil");
         try {
-            ObjectNode config = YAML.readValue(configFile, ObjectNode.class);
+            ObjectNode config = YAML.readValue(configFile.read(), ObjectNode.class);
             if (config.hasNonNull("tags")) {
                 JsonNode tagsNode = config.get("tags");
                 if (!tagsNode.isEmpty()) {
@@ -53,7 +55,7 @@ public class ConfigYmlTagsUtil {
                 }
             }
         } catch (Exception e) {
-            logger.println("Prisma Cloud IaC Scan: Failed to read tags from config file '" + configFile.getAbsolutePath() + "': " + e.getMessage());
+            logger.println("Prisma Cloud IaC Scan: Failed to read tags from config file '" + configFile.getRemote() + "': " + e.getMessage());
         }
         return Collections.emptyMap();
     }
@@ -68,13 +70,13 @@ public class ConfigYmlTagsUtil {
      */
 
     @SuppressFBWarnings("RE_POSSIBLE_UNINTENDED_PATTERN")
-    public static IacTemplateParameters readTemplateParams(PrintStream logger, File configFile, String parentName) {
+    public static IacTemplateParameters readTemplateParams(PrintStream logger, FilePath configFile, String parentName) {
         logger.println("Prisma Cloud IaC Scan: Inside readTemplateParams method");
         IacTemplateParameters iacTemplateParameters = new IacTemplateParameters();
         String pathWithParentName  = "./"+ parentName+ "/";
         String replacePath = "./";
         try {
-            ObjectNode config = YAML.readValue(configFile, ObjectNode.class);
+            ObjectNode config = YAML.readValue(configFile.read(), ObjectNode.class);
             if (config.hasNonNull("template_parameters")) {
                 logger.println("Prisma Cloud IaC Scan: Processing Template Parameters .....");
 
@@ -111,11 +113,11 @@ public class ConfigYmlTagsUtil {
                 }
             }
         } catch (JsonMappingException e) {
-            logger.println("Prisma Cloud IaC Scan: Failed to read template parameters variables from config file '" + configFile.getAbsolutePath() + "': " + e.getMessage());
+            logger.println("Prisma Cloud IaC Scan: Failed to read template parameters variables from config file '" + configFile.getRemote() + "': " + e.getMessage());
         } catch (JsonProcessingException e) {
-            logger.println("Prisma Cloud IaC Scan: Failed to read template parameters variables from config file '" + configFile.getAbsolutePath() + "': " + e.getMessage());
+            logger.println("Prisma Cloud IaC Scan: Failed to read template parameters variables from config file '" + configFile.getRemote() + "': " + e.getMessage());
         } catch (Exception e) {
-            logger.println("Prisma Cloud IaC Scan: Failed to read template parameters variables from config file '" + configFile.getAbsolutePath() + "': " + e.getMessage());
+            logger.println("Prisma Cloud IaC Scan: Failed to read template parameters variables from config file '" + configFile.getRemote() + "': " + e.getMessage());
         }
         return iacTemplateParameters;
     }

@@ -23,8 +23,8 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 
-import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -144,12 +144,11 @@ public class TemplateScanBuilder extends Builder implements SimpleBuildStep {
 
         listener.getLogger().println("Prisma Cloud IaC Scan: Custom Build Started");
 
-        File sourceFolder = new File(workspace.getRemote());
-        sourceFolder.setWritable(true);
+        FilePath sourceFolder = new FilePath(workspace.getChannel(), workspace.getRemote());
         listener.getLogger().println("Prisma Cloud IaC Scan: Source Folder : " + sourceFolder);
 
-        File destinationFile = new File(sourceFolder + "/iacscan.zip");
-        destinationFile.setWritable(true);
+        FilePath destinationFile = new FilePath(workspace.getChannel(),
+            sourceFolder.getRemote() + "/iacscan.zip");
         listener.getLogger().println("Prisma Cloud IaC Scan: Destination File : " + destinationFile);
 
         String jobName = build.getDisplayName();
@@ -166,11 +165,11 @@ public class TemplateScanBuilder extends Builder implements SimpleBuildStep {
 
         Map<String, String> configFileTags;
 
-        File configYmlFile = new File(sourceFolder, ".prismaCloud/config.yml");
-        File configYamlFile = new File(sourceFolder, ".prismaCloud/config.yaml");
-        if (configYmlFile.exists() && configYmlFile.isFile() && configYmlFile.canRead()) {
+        FilePath configYmlFile = new FilePath(sourceFolder, ".prismaCloud/config.yml");
+        FilePath configYamlFile = new FilePath(sourceFolder, ".prismaCloud/config.yaml");
+        if (configYmlFile.exists() && !configYmlFile.isDirectory()) {
             configFileTags = ConfigYmlTagsUtil.readTags(listener.getLogger(), configYmlFile);
-        } else if (configYamlFile.exists() && configYamlFile.isFile() && configYamlFile.canRead()) {
+        } else if (configYamlFile.exists() && !configYmlFile.isDirectory()) {
             configFileTags = ConfigYmlTagsUtil.readTags(listener.getLogger(), configYamlFile);
         } else {
             configFileTags = Collections.emptyMap();
@@ -186,8 +185,8 @@ public class TemplateScanBuilder extends Builder implements SimpleBuildStep {
         listener.getLogger().println("Prisma Cloud IaC Scan: ------------------------- Prisma Cloud IAC----------------------");
 
         if (isZipFileCreated) {
-            listener.getLogger().println("Prisma Cloud IaC Scan: Calling Prisma Cloud IaC Scan API " + destinationFile.getAbsolutePath());
-            String result = callPrismaCloudAsyncEndPoint(destinationFile.getAbsolutePath(), listener, workspace.getRemote(), jobName, configFileTags, iacTemplateParameters);
+            listener.getLogger().println("Prisma Cloud IaC Scan: Calling Prisma Cloud IaC Scan API " + destinationFile);
+            String result = callPrismaCloudAsyncEndPoint(destinationFile.getRemote(), listener, workspace.getRemote(), jobName, configFileTags, iacTemplateParameters);
             buildStatus = checkSeverity(result, listener);
             if (apiResponseError) {
                 listener.getLogger().println("Prisma Cloud IaC Scan: Partial error detected.....");
@@ -206,10 +205,11 @@ public class TemplateScanBuilder extends Builder implements SimpleBuildStep {
         }
     }
 
-    protected boolean createZipFile(File sourceFolder, File destinationFile) throws IOException {
-        ZipUtils zipUtils = new ZipUtils();
-        zipUtils.zipFolder(sourceFolder.getAbsolutePath(), destinationFile.getAbsolutePath());
-        return destinationFile.isFile();
+    protected boolean createZipFile(FilePath sourceFolder, FilePath destinationFile) throws IOException, InterruptedException {
+        try (OutputStream os = destinationFile.write()) {
+            sourceFolder.zip(os, file -> !"iacscan.zip".equals(file.getName()));
+        }
+        return true;
     }
 
     /**
@@ -414,16 +414,16 @@ public class TemplateScanBuilder extends Builder implements SimpleBuildStep {
     }
 
     @SuppressFBWarnings({"NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"})
-    public IacTemplateParameters initializeIacTemplateParameters(File sourceFolder, TaskListener listener, String parentName) {
+    public IacTemplateParameters initializeIacTemplateParameters(FilePath sourceFolder, TaskListener listener, String parentName) throws IOException, InterruptedException {
         listener.getLogger().println("Prisma Cloud IaC Scan: Inside initializeIacTemplateParameters");
 
         IacTemplateParameters iacTemplateParameters;
 
-        File configYmlFile = new File(sourceFolder, ".prismaCloud/config.yml");
-        File configYamlFile = new File(sourceFolder, ".prismaCloud/config.yaml");
-        if (configYmlFile.exists() && configYmlFile.isFile() && configYmlFile.canRead()) {
+        FilePath configYmlFile = new FilePath(sourceFolder, ".prismaCloud/config.yml");
+        FilePath configYamlFile = new FilePath(sourceFolder, ".prismaCloud/config.yaml");
+        if (configYmlFile.exists() && !configYmlFile.isDirectory()) {
             iacTemplateParameters = ConfigYmlTagsUtil.readTemplateParams(listener.getLogger(), configYmlFile, parentName);
-        } else if (configYamlFile.exists() && configYamlFile.isFile() && configYamlFile.canRead()) {
+        } else if (configYamlFile.exists() && !configYamlFile.isDirectory()) {
             iacTemplateParameters = ConfigYmlTagsUtil.readTemplateParams(listener.getLogger(), configYamlFile, parentName);
         } else {
             iacTemplateParameters = new IacTemplateParameters();
