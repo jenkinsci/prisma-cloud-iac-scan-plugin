@@ -7,20 +7,23 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import hudson.FilePath;
 import io.prismacloud.iac.commons.config.PrismaCloudConfiguration;
 import io.prismacloud.iac.commons.model.*;
 import io.prismacloud.iac.commons.util.ConfigYmlTagsUtil;
 import io.prismacloud.iac.commons.util.JSONUtils;
 import io.prismacloud.iac.commons.service.PrismaCloudService;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.ParseException;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -59,7 +62,7 @@ public class PrismaCloudServiceImpl implements PrismaCloudService {
      * This method scan the zip file and returns JSON as string.
      */
     @Override
-    public String getScanDetails(PrismaCloudConfiguration prismaCloudConfiguration, String filePath)
+    public String getScanDetails(PrismaCloudConfiguration prismaCloudConfiguration, FilePath filePath)
             throws IOException, InterruptedException {
         logger.info("Entered into PrismaCloudServiceImpl.getScanDetails");
         return getScanResult(prismaCloudConfiguration, filePath);
@@ -108,7 +111,7 @@ public class PrismaCloudServiceImpl implements PrismaCloudService {
      * Below method is used to get scan details from prisma clod API
      */
     @SuppressFBWarnings({"RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"})
-    public String getScanResult(PrismaCloudConfiguration prismaCloudConfiguration, String filePath)
+    public String getScanResult(PrismaCloudConfiguration prismaCloudConfiguration, FilePath filePath)
             throws IOException, InterruptedException {
         String responseBody = "";
         String authToken = generateToken(prismaCloudConfiguration);
@@ -207,13 +210,22 @@ public class PrismaCloudServiceImpl implements PrismaCloudService {
     /**
      * Below methos is used to upload the file to given S3 Bucket
      */
-    private CloseableHttpResponse uploadFileToS3(CloseableHttpClient client, String s3LocationURL, String filePath) throws IOException {
+    private CloseableHttpResponse uploadFileToS3(CloseableHttpClient client, String s3LocationURL, FilePath filePath) throws IOException, InterruptedException {
         logger.info("Entered into PrismaCloudServiceImpl.uploadFileToS3");
         HttpPut httpPut = new HttpPut(s3LocationURL);
-        File fileToUpload = new File(filePath);
-        fileToUpload.setReadable(true);
-        httpPut.setEntity(new FileEntity(fileToUpload, ContentType.APPLICATION_OCTET_STREAM));
-        return client.execute(httpPut);
+        Path tempFile = null;
+        try {
+            // create a temporary File in case the actual file is remote, so it
+            // can be accessed locally by CloseableHttpClient#execute
+            tempFile = Files.createTempFile("iacscan", ".zip");
+            FileUtils.copyInputStreamToFile(filePath.read(), tempFile.toFile());
+            httpPut.setEntity(new FileEntity(tempFile.toFile(), ContentType.APPLICATION_OCTET_STREAM));
+            return client.execute(httpPut);
+        } finally {
+            if (null != tempFile) {
+                Files.deleteIfExists(tempFile);
+            }
+        }
     }
 
     /**
