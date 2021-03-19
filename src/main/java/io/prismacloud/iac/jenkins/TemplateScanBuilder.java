@@ -23,8 +23,10 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 
+import java.io.FileFilter;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -207,7 +209,7 @@ public class TemplateScanBuilder extends Builder implements SimpleBuildStep {
 
     protected boolean createZipFile(FilePath sourceFolder, FilePath destinationFile) throws IOException, InterruptedException {
         try (OutputStream os = destinationFile.write()) {
-            sourceFolder.zip(os, file -> !"iacscan.zip".equals(file.getName()));
+            sourceFolder.zip(os, (Serializable & FileFilter) file -> !"iacscan.zip".equals(file.getName()));
         }
         return true;
     }
