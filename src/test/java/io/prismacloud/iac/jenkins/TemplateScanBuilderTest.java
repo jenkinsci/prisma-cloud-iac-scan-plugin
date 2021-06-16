@@ -3,6 +3,8 @@ package io.prismacloud.iac.jenkins;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Mockito.spy;
+
+import hudson.EnvVars;
 import hudson.model.Job;
 import io.prismacloud.iac.commons.config.PrismaCloudConfiguration;
 import io.prismacloud.iac.commons.model.IacTemplateParameters;
@@ -68,9 +70,10 @@ public class TemplateScanBuilderTest {
     prismaCloudServiceImpl = spy(new PrismaCloudServiceImpl());
     iacTemplateParameters = spy(new IacTemplateParameters());
 
-    Mockito.doReturn(scanResult).when(prismaCloudServiceImpl).getScanDetails(any(PrismaCloudConfiguration.class), any(FilePath.class));
+    Mockito.doReturn(new EnvVars()).when(build).getEnvironment(any(TaskListener.class));
+    Mockito.doReturn(scanResult).when(prismaCloudServiceImpl).getScanDetails(any(EnvVars.class), any(PrismaCloudConfiguration.class), any(FilePath.class));
     Mockito.doReturn(printStream).when(listener).getLogger();
-    Mockito.doReturn(scanResult).when(templateScanBuilder).callPrismaCloudAsyncEndPoint(any(FilePath.class),any(TaskListener.class), any(String.class), any(String.class), anyMap(), any(IacTemplateParameters.class));
+    Mockito.doReturn(scanResult).when(templateScanBuilder).callPrismaCloudAsyncEndPoint(any(FilePath.class),any(TaskListener.class), any(EnvVars.class), any(String.class), any(String.class), anyMap(), any(IacTemplateParameters.class));
     Mockito.doReturn(true).when(templateScanBuilder).checkSeverity(any(String.class), any(TaskListener.class));
     Mockito.doReturn(propertiesMap).when(templateScanBuilder).getSeverityMap(any(String.class),any(String.class),any(String.class),any(String.class));
     Mockito.doReturn(true).when(templateScanBuilder).createZipFile(any(FilePath.class), any(FilePath.class));

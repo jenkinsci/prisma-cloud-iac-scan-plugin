@@ -7,7 +7,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import hudson.EnvVars;
 import hudson.FilePath;
+import hudson.ProxyConfiguration;
 import io.prismacloud.iac.commons.config.PrismaCloudConfiguration;
 import io.prismacloud.iac.commons.model.*;
 import io.prismacloud.iac.commons.util.ConfigYmlTagsUtil;
@@ -20,12 +22,21 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import jenkins.model.Jenkins;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpHost;
 import org.apache.http.ParseException;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.Credentials;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -33,8 +44,11 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.FileEntity;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.client.ProxyAuthenticationStrategy;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +60,18 @@ import org.slf4j.LoggerFactory;
 
 public class PrismaCloudServiceImpl implements PrismaCloudService {
 
-    Logger logger = LoggerFactory.getLogger(PrismaCloudServiceImpl.class);
+    private static final String HTTP_PROXY = "HTTP_PROXY";
+    private static final String HTTP_PROXY_LC = "http_proxy";
+    private static final String HTTPS_PROXY = "HTTPS_PROXY";
+    private static final String HTTPS_PROXY_LC = "https_proxy";
+    private static final String NO_PROXY = "NO_PROXY";
+    private static final String NO_PROXY_LC = "no_proxy";
+    private static final Pattern PROXY_PATTERN = Pattern.compile("(https?)://(([^:]+)(:(.+))?@)?([\\da-zA-Z.-]+)(:(\\d+))?/?");
+
+    private static final int HTTP_PORT = 80;
+    private static final int HTTPS_PORT = 443;
+
+    private static final Logger logger = LoggerFactory.getLogger(PrismaCloudServiceImpl.class);
 
     /**
      * This method returns the valid token using access_key and secret key.
@@ -62,10 +87,12 @@ public class PrismaCloudServiceImpl implements PrismaCloudService {
      * This method scan the zip file and returns JSON as string.
      */
     @Override
-    public String getScanDetails(PrismaCloudConfiguration prismaCloudConfiguration, FilePath filePath)
+    public String getScanDetails(EnvVars envVars, PrismaCloudConfiguration prismaCloudConfiguration, FilePath filePath)
             throws IOException, InterruptedException {
         logger.info("Entered into PrismaCloudServiceImpl.getScanDetails");
-        return getScanResult(prismaCloudConfiguration, filePath);
+        CloseableHttpClient httpClient = createHttpClient(envVars,
+            prismaCloudConfiguration.getAuthUrl());
+        return getScanResult(httpClient, prismaCloudConfiguration, filePath);
     }
 
     /**
@@ -111,7 +138,7 @@ public class PrismaCloudServiceImpl implements PrismaCloudService {
      * Below method is used to get scan details from prisma clod API
      */
     @SuppressFBWarnings({"RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"})
-    public String getScanResult(PrismaCloudConfiguration prismaCloudConfiguration, FilePath filePath)
+    public String getScanResult(CloseableHttpClient httpClient, PrismaCloudConfiguration prismaCloudConfiguration, FilePath filePath)
             throws IOException, InterruptedException {
         String responseBody = "";
         String authToken = generateToken(prismaCloudConfiguration);
@@ -361,6 +388,108 @@ public class PrismaCloudServiceImpl implements PrismaCloudService {
         jsonApiModelAsyncScanRequest.setData(jsonApiModelAsyncScanRequestData);
         ObjectMapper mapper = new ObjectMapper();
         return new StringEntity(mapper.writeValueAsString(jsonApiModelAsyncScanRequest));
+    }
+
+    private CloseableHttpClient createHttpClient(EnvVars envVars, String prismaUrl) {
+        HttpClientBuilder clientBuilder = HttpClientBuilder.create().useSystemProperties();
+        boolean skipJenkinsProxy = false;
+
+        if (!envVars.isEmpty()) {
+            if ("true".equalsIgnoreCase(envVars.get("IGNORE_SYSTEM_PROXY", "false"))) {
+                skipJenkinsProxy = true;
+            } else {
+                String proxyUrl =
+                    envVars.get(HTTPS_PROXY_LC,
+                        envVars.get(HTTPS_PROXY,
+                            envVars.get(HTTP_PROXY_LC,
+                                envVars.get(HTTP_PROXY))));
+                if (proxyUrl != null && !proxyUrl.isEmpty()) {
+                    try {
+                        Matcher matcher = PROXY_PATTERN.matcher(proxyUrl);
+                        if (matcher.matches()) {
+                            String proxyScheme = null;
+                            String proxyHost = null;
+                            int proxyPort = -1;
+                            String proxyUser = null;
+                            String proxyPass = null;
+                            if (matcher.group(1) != null) {
+                                proxyScheme = matcher.group(1).toLowerCase(Locale.ROOT);
+                            }
+                            if (matcher.group(3) != null) {
+                                proxyUser = matcher.group(3);
+                            }
+                            if (matcher.group(5) != null) {
+                                proxyPass = matcher.group(5);
+                            }
+                            proxyHost = matcher.group(6).toLowerCase(Locale.ROOT);
+                            if (matcher.group(8) != null) {
+                                proxyPort = Integer.parseInt(matcher.group(8));
+                            } else {
+                                proxyPort = "https".equalsIgnoreCase(proxyScheme) ? 443 : 80;
+                            }
+                            if (proxyHost != null && !proxyHost.isEmpty()) {
+                                setProxyOnBuilder(clientBuilder, proxyScheme, proxyHost, proxyPort, proxyUser, proxyPass);
+                                skipJenkinsProxy = true;
+                                logger.info("Proxy set using build env");
+                            }
+                        }
+                    } catch (Exception e) {
+                        logger.warn("Not using Env HTTP_PROXY. Failed to parse value [{}] error: {}", proxyUrl, e.getMessage());
+                    }
+                }
+            }
+        }
+
+        if (!skipJenkinsProxy && Jenkins.getInstanceOrNull() != null) {
+            hudson.ProxyConfiguration proxyConfiguration = Jenkins.get().proxy;
+            if (proxyConfiguration != null) {
+                boolean skipOnNoProxyHost = false;
+                if (proxyConfiguration.noProxyHost != null) {
+                    String[] noProxyParts = proxyConfiguration.noProxyHost.split("[ \t\n,|]+");
+                    for (String noProxyPart : noProxyParts) {
+                        if (noProxyPart.endsWith(".prismacloud.io")
+                            || prismaUrl.contains("//" + noProxyPart)) {
+                            skipOnNoProxyHost = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!skipOnNoProxyHost) {
+                    String proxyHost = proxyConfiguration.name;
+                    int proxyPort = proxyConfiguration.port;
+                    String proxyUser = proxyConfiguration.getUserName();
+                    String proxyPass = proxyConfiguration.getPassword();
+                    setProxyOnBuilder(clientBuilder, "http", proxyHost, proxyPort, proxyUser, proxyPass);
+                    logger.info("Proxy set using Jenkins system settings");
+                }
+            }
+        }
+        return clientBuilder.build();
+    }
+
+    private void setProxyOnBuilder(HttpClientBuilder clientBuilder,
+        String proxyScheme, String proxyHost, int proxyPort,
+        String proxyUser, String proxyPass) {
+
+        HttpHost proxy = new HttpHost(proxyHost, proxyPort, proxyScheme);
+        if (proxyUser != null && !proxyUser.isEmpty()) {
+            if (proxyPass != null && !proxyPass.isEmpty()) {
+                CredentialsProvider credsProvider = new BasicCredentialsProvider();
+                Credentials credentials = new UsernamePasswordCredentials(proxyUser, proxyPass);
+                credsProvider.setCredentials(new AuthScope(proxyHost, proxyPort), credentials);
+                clientBuilder.setDefaultCredentialsProvider(credsProvider);
+                clientBuilder.setProxyAuthenticationStrategy(new ProxyAuthenticationStrategy());
+                logger.info("Using proxy: {}://{}:{}@{}:{}",
+                    proxyScheme, proxyUser, StringUtils.repeat('*', proxyPass.length()), proxyHost, proxyPort);
+            } else {
+                logger.warn("Ignoring proxy credential as no password was provided");
+                logger.info("Using proxy: {}://{}:{}", proxyScheme, proxyHost, proxyPort);
+            }
+        } else {
+            logger.info("Using proxy: {}://{}:{}", proxyScheme, proxyHost, proxyPort);
+        }
+        clientBuilder.setProxy(proxy);
     }
 
 

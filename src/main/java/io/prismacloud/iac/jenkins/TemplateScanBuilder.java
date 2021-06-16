@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
+import hudson.EnvVars;
 import io.prismacloud.iac.commons.config.PrismaCloudConfiguration;
 import io.prismacloud.iac.commons.model.IacTemplateParameters;
 import io.prismacloud.iac.commons.service.impl.PrismaCloudServiceImpl;
@@ -188,7 +189,8 @@ public class TemplateScanBuilder extends Builder implements SimpleBuildStep {
 
         if (isZipFileCreated) {
             listener.getLogger().println("Prisma Cloud IaC Scan: Calling Prisma Cloud IaC Scan API " + destinationFile);
-            String result = callPrismaCloudAsyncEndPoint(destinationFile, listener, workspace.getRemote(), jobName, configFileTags, iacTemplateParameters);
+            EnvVars envVars = build.getEnvironment(listener);
+            String result = callPrismaCloudAsyncEndPoint(destinationFile, listener, envVars, workspace.getRemote(), jobName, configFileTags, iacTemplateParameters);
             buildStatus = checkSeverity(result, listener);
             if (apiResponseError) {
                 listener.getLogger().println("Prisma Cloud IaC Scan: Partial error detected.....");
@@ -304,7 +306,7 @@ public class TemplateScanBuilder extends Builder implements SimpleBuildStep {
      */
     @SuppressFBWarnings({"UC_USELESS_OBJECT", "DLS_DEAD_LOCAL_STORE", "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"})
     public String callPrismaCloudAsyncEndPoint(
-            FilePath filePath, TaskListener listener, String workspace, String jobName, Map<String, String> configFileTags, IacTemplateParameters iacTemplateParameters)
+            FilePath filePath, TaskListener listener, EnvVars envVars, String workspace, String jobName, Map<String, String> configFileTags, IacTemplateParameters iacTemplateParameters)
             throws IOException, InterruptedException {
         listener.getLogger().println("Prisma Cloud IaC Scan: callPrismaCloudAsyncEndPoint =====Workspace======" + workspace);
         Config descriptor = (Config) Jenkins.get().getDescriptor(Config.class);
@@ -335,7 +337,7 @@ public class TemplateScanBuilder extends Builder implements SimpleBuildStep {
         prismaCloudConfiguration.setJobName(jobName);
         prismaCloudConfiguration.setConfigFileTags(configFileTags);
         prismaCloudConfiguration.setIacTemplateParameters(iacTemplateParameters);
-        return prismaCloudService.getScanDetails(prismaCloudConfiguration, filePath);
+        return prismaCloudService.getScanDetails(envVars, prismaCloudConfiguration, filePath);
     }
 
     @SneakyThrows
