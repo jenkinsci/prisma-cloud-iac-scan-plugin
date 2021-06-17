@@ -64,8 +64,8 @@ public class ConfigYmlTagsUtil {
     /**
      * This method reads config.yml file and extracts Template Parameters Information
      * Set extracted values to IaCTemplateParameters object
-     * @param logger
-     * @param configFile
+     * @param logger the job logger
+     * @param configFile the config file path
      * @return IacTemplateParameters
      */
 
