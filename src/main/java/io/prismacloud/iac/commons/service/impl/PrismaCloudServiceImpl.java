@@ -9,13 +9,19 @@ import com.google.gson.stream.JsonReader;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.EnvVars;
 import hudson.FilePath;
-import hudson.ProxyConfiguration;
 import io.prismacloud.iac.commons.config.PrismaCloudConfiguration;
-import io.prismacloud.iac.commons.model.*;
+import io.prismacloud.iac.commons.model.IacTemplateParameters;
+import io.prismacloud.iac.commons.model.JsonApiModelAsyncScanRequest;
+import io.prismacloud.iac.commons.model.JsonApiModelAsyncScanRequestData;
+import io.prismacloud.iac.commons.model.JsonApiModelAsyncScanRequestDataAttributes;
+import io.prismacloud.iac.commons.model.JsonApiModelFailureCriteria;
+import io.prismacloud.iac.commons.model.JsonApiModelScanAttributes;
+import io.prismacloud.iac.commons.model.JsonApiModelScanTrigger;
+import io.prismacloud.iac.commons.model.JsonApiModelScanTriggerData;
+import io.prismacloud.iac.commons.model.JsonApiModelScanTriggerDataAttributes;
+import io.prismacloud.iac.commons.service.PrismaCloudService;
 import io.prismacloud.iac.commons.util.ConfigYmlTagsUtil;
 import io.prismacloud.iac.commons.util.JSONUtils;
-import io.prismacloud.iac.commons.service.PrismaCloudService;
-
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
@@ -25,7 +31,6 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
-
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import jenkins.model.Jenkins;
@@ -47,7 +52,6 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.client.ProxyAuthenticationStrategy;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
@@ -80,7 +84,10 @@ public class PrismaCloudServiceImpl implements PrismaCloudService {
     public String getAccessToken(PrismaCloudConfiguration prismaCloudConfiguration)
             throws IOException {
         logger.info("Entered into PrismaCloudServiceImpl.getAccessToken");
-        return generateToken(prismaCloudConfiguration);
+        try (CloseableHttpClient httpClient =
+            createHttpClient(null, prismaCloudConfiguration.getAuthUrl())) {
+            return generateToken(httpClient, prismaCloudConfiguration);
+        }
     }
 
     /**
@@ -90,21 +97,22 @@ public class PrismaCloudServiceImpl implements PrismaCloudService {
     public String getScanDetails(EnvVars envVars, PrismaCloudConfiguration prismaCloudConfiguration, FilePath filePath)
             throws IOException, InterruptedException {
         logger.info("Entered into PrismaCloudServiceImpl.getScanDetails");
-        CloseableHttpClient httpClient = createHttpClient(envVars,
-            prismaCloudConfiguration.getAuthUrl());
-        return getScanResult(httpClient, prismaCloudConfiguration, filePath);
+        try (CloseableHttpClient httpClient =
+            createHttpClient(envVars, prismaCloudConfiguration.getAuthUrl())) {
+            return getScanResult(httpClient, prismaCloudConfiguration, filePath);
+        }
     }
 
     /**
      * This method is used for API token generation.
      */
     @SuppressFBWarnings({"RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"})
-    private String generateToken(PrismaCloudConfiguration prismaCloudConfiguration)
+    private String generateToken(
+        CloseableHttpClient client, PrismaCloudConfiguration prismaCloudConfiguration)
             throws ParseException, IOException {
         logger.debug("Entered into PrismaCloudServiceImpl.generateToken");
 
-        try (CloseableHttpClient client = HttpClients.createDefault();
-             CloseableHttpResponse authResponse = getJwtToken(client, prismaCloudConfiguration)) {
+        try (CloseableHttpResponse authResponse = getJwtToken(client, prismaCloudConfiguration)) {
             int statusCode = authResponse.getStatusLine().getStatusCode();
             if (statusCode == 200) {
                 String responseBody = EntityUtils.toString(authResponse.getEntity());
@@ -138,15 +146,15 @@ public class PrismaCloudServiceImpl implements PrismaCloudService {
      * Below method is used to get scan details from prisma clod API
      */
     @SuppressFBWarnings({"RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"})
-    public String getScanResult(CloseableHttpClient httpClient, PrismaCloudConfiguration prismaCloudConfiguration, FilePath filePath)
+    public String getScanResult(CloseableHttpClient client, PrismaCloudConfiguration prismaCloudConfiguration, FilePath filePath)
             throws IOException, InterruptedException {
         String responseBody = "";
-        String authToken = generateToken(prismaCloudConfiguration);
+        String authToken = generateToken(client, prismaCloudConfiguration);
         String processingStatus = "processing";
 
         logger.info("Executing get Scan Result ....");
 
-        try (CloseableHttpClient client = HttpClients.createDefault(); CloseableHttpResponse scanUrlResponse = getPrismaCloudScanDetails(client, prismaCloudConfiguration, authToken)) {
+        try (CloseableHttpResponse scanUrlResponse = getPrismaCloudScanDetails(client, prismaCloudConfiguration, authToken)) {
             if (scanUrlResponse.getStatusLine().getStatusCode() == 200 || scanUrlResponse.getStatusLine().getStatusCode() == 201) {
                 logger.info("Response received for getPrismaCloudScanDetails ...");
                 responseBody = EntityUtils.toString(scanUrlResponse.getEntity());
@@ -394,47 +402,62 @@ public class PrismaCloudServiceImpl implements PrismaCloudService {
         HttpClientBuilder clientBuilder = HttpClientBuilder.create().useSystemProperties();
         boolean skipJenkinsProxy = false;
 
-        if (!envVars.isEmpty()) {
+        if (envVars != null && !envVars.isEmpty()) {
             if ("true".equalsIgnoreCase(envVars.get("IGNORE_SYSTEM_PROXY", "false"))) {
                 skipJenkinsProxy = true;
             } else {
-                String proxyUrl =
-                    envVars.get(HTTPS_PROXY_LC,
-                        envVars.get(HTTPS_PROXY,
-                            envVars.get(HTTP_PROXY_LC,
-                                envVars.get(HTTP_PROXY))));
-                if (proxyUrl != null && !proxyUrl.isEmpty()) {
-                    try {
-                        Matcher matcher = PROXY_PATTERN.matcher(proxyUrl);
-                        if (matcher.matches()) {
-                            String proxyScheme = null;
-                            String proxyHost = null;
-                            int proxyPort = -1;
-                            String proxyUser = null;
-                            String proxyPass = null;
-                            if (matcher.group(1) != null) {
-                                proxyScheme = matcher.group(1).toLowerCase(Locale.ROOT);
-                            }
-                            if (matcher.group(3) != null) {
-                                proxyUser = matcher.group(3);
-                            }
-                            if (matcher.group(5) != null) {
-                                proxyPass = matcher.group(5);
-                            }
-                            proxyHost = matcher.group(6).toLowerCase(Locale.ROOT);
-                            if (matcher.group(8) != null) {
-                                proxyPort = Integer.parseInt(matcher.group(8));
-                            } else {
-                                proxyPort = "https".equalsIgnoreCase(proxyScheme) ? 443 : 80;
-                            }
-                            if (proxyHost != null && !proxyHost.isEmpty()) {
-                                setProxyOnBuilder(clientBuilder, proxyScheme, proxyHost, proxyPort, proxyUser, proxyPass);
-                                skipJenkinsProxy = true;
-                                logger.info("Proxy set using build env");
-                            }
+                String noProxyHost = envVars.get(NO_PROXY, envVars.get(NO_PROXY_LC));
+                boolean skipOnNoProxyHost = false;
+                if (noProxyHost != null) {
+                    String[] noProxyParts = noProxyHost.split("[ \t\n,|]+");
+                    for (String noProxyPart : noProxyParts) {
+                        if (noProxyPart.endsWith(".prismacloud.io")
+                            || prismaUrl.contains("//" + noProxyPart)) {
+                            skipOnNoProxyHost = true;
+                            break;
                         }
-                    } catch (Exception e) {
-                        logger.warn("Not using Env HTTP_PROXY. Failed to parse value [{}] error: {}", proxyUrl, e.getMessage());
+                    }
+                }
+                if (!skipOnNoProxyHost) {
+                    String proxyUrl =
+                        envVars.get(HTTPS_PROXY_LC,
+                            envVars.get(HTTPS_PROXY,
+                                envVars.get(HTTP_PROXY_LC,
+                                    envVars.get(HTTP_PROXY))));
+                    if (proxyUrl != null && !proxyUrl.isEmpty()) {
+                        try {
+                            Matcher matcher = PROXY_PATTERN.matcher(proxyUrl);
+                            if (matcher.matches()) {
+                                String proxyScheme;
+                                int proxyPort;
+                                String proxyUser = null;
+                                String proxyPass = null;
+                                if (matcher.group(1) != null) {
+                                    proxyScheme = matcher.group(1).toLowerCase(Locale.ROOT);
+                                } else {
+                                    proxyScheme = "http";
+                                }
+                                if (matcher.group(3) != null) {
+                                    proxyUser = matcher.group(3);
+                                }
+                                if (matcher.group(5) != null) {
+                                    proxyPass = matcher.group(5);
+                                }
+                                String proxyHost = matcher.group(6).toLowerCase(Locale.ROOT);
+                                if (matcher.group(8) != null) {
+                                    proxyPort = Integer.parseInt(matcher.group(8));
+                                } else {
+                                    proxyPort = "https".equalsIgnoreCase(proxyScheme) ? HTTPS_PORT : HTTP_PORT;
+                                }
+                                if (proxyHost != null && !proxyHost.isEmpty()) {
+                                    setProxyOnBuilder(clientBuilder, proxyScheme, proxyHost, proxyPort, proxyUser, proxyPass);
+                                    skipJenkinsProxy = true;
+                                    logger.info("Proxy set using build env");
+                                }
+                            }
+                        } catch (Exception e) {
+                            logger.warn("Not using Env HTTP_PROXY. Failed to parse value [{}] error: {}", proxyUrl, e.getMessage());
+                        }
                     }
                 }
             }
