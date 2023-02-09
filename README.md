@@ -1,6 +1,8 @@
-# Prisma Cloud Jenkins Plugin (IaC)
+# (Deprecated) Prisma Cloud Jenkins Plugin (IaC)
 
 [![License](https://img.shields.io/github/license/jenkinsci/github-plugin.svg)](LICENSE)
+
+***This plugin has been deprecated and will be removed at the end of February 2023. Please transition to Prisma Cloud Code Security.***
 
 ## Description
 
